@@ -16,6 +16,8 @@
   --nav-bg: #0b4f72;
   --nav-active: #f59a2e;
   --accent: #1dd3d7;
+  --navbar-bg: rgba(246, 251, 255, 0.95);
+  --navbar-mobile-bg: rgba(246, 251, 255, 0.98);
 }
 
 [data-theme="dark"] {
@@ -28,6 +30,8 @@
   --nav-bg: #0a1929;
   --nav-active: #f59a2e;
   --accent: #1dd3d7;
+  --navbar-bg: rgba(10, 25, 41, 0.95);
+  --navbar-mobile-bg: rgba(10, 25, 41, 0.98);
 }
 
 /* Dark mode specific overrides for hardcoded colors */
@@ -484,7 +488,7 @@ body {
 .navbar {
   position: sticky;
   top: 0;
-  background: rgba(246, 251, 255, 0.95);
+  background: var(--navbar-bg);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
   padding: 20px 0;
@@ -834,7 +838,7 @@ body {
 
 .cta-content .btn-primary {
   background: #fdfaf4;
-  color: var(--text-strong);
+  color: #0b3c54;
 }
 
 .cta-content .btn-primary:hover {
@@ -932,7 +936,7 @@ body {
     top: 80px;
     left: 0;
     right: 0;
-    background: rgba(246, 251, 255, 0.98);
+    background: var(--navbar-mobile-bg);
     flex-direction: column;
     padding: 32px;
     gap: 24px;

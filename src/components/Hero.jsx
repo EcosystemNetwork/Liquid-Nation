@@ -18,7 +18,8 @@ const Hero = ({ onLaunchApp }) => {
       <div className="container">
         <div className="hero-content">
           <h1 className="hero-title">
-            Trade Across Chains with <span className="gradient-text">Liquid Nation</span>
+            Trade Across Chains with<br />
+            <span className="gradient-text">Liquid Nation</span>
           </h1>
           <p className="hero-description">
             The premier decentralized P2P exchange for seamless cross-chain trading. 

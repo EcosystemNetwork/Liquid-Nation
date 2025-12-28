@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 import Offers from './components/Offers';
 import CreateOrder from './components/CreateOrder';
 import Settings from './components/Settings';
+import ThemeToggle from './components/ThemeToggle';
 import { chainThemes } from './data';
 
 function MainApp({ onBackToLanding }) {
@@ -45,7 +46,10 @@ function MainApp({ onBackToLanding }) {
         >
           <img src="/logo.svg" alt="Liquid Nation" className="logo-image" />
         </button>
-        <div className="wallet-pill">0x123...</div>
+        <div className="top-bar-actions">
+          <ThemeToggle className="top-bar-theme-toggle" />
+          <div className="wallet-pill">0x123...</div>
+        </div>
       </header>
 
       <main className="main-stage">

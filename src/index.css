@@ -18,6 +18,33 @@
   --accent: #1dd3d7;
 }
 
+[data-theme="dark"] {
+  --bg: linear-gradient(180deg, #0a1929 0%, #0d2135 45%, #0f2940 100%);
+  --panel: #132f4c;
+  --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --border: #1e3a52;
+  --text-strong: #e3f2fd;
+  --text-subtle: #b0bec5;
+  --nav-bg: #0a1929;
+  --nav-active: #f59a2e;
+  --accent: #1dd3d7;
+}
+
+/* Dark mode specific overrides for hardcoded colors */
+[data-theme="dark"] .table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .menu-item:hover {
+  background: rgba(29, 211, 215, 0.1);
+  color: var(--accent);
+}
+
+[data-theme="dark"] .wallet-pill {
+  background: linear-gradient(135deg, #1e3a52, #132f4c);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
@@ -97,6 +124,57 @@ body {
   font-weight: 700;
   letter-spacing: 0.4px;
   box-shadow: 0 10px 26px rgba(7, 83, 114, 0.25);
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-toggle {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--accent);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+}
+
+.theme-toggle svg {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(20deg);
+}
+
+.settings-theme-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.theme-status {
+  font-weight: 600;
+  color: var(--text-strong);
 }
 
 .main-stage {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = ({ onLaunchApp }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -32,6 +33,7 @@ const Navbar = ({ onLaunchApp }) => {
           <a href="#how-it-works" onClick={handleLinkClick}>How It Works</a>
           <a href="#stats" onClick={handleLinkClick}>Stats</a>
           <a href="#docs" onClick={handleLinkClick}>Docs</a>
+          <ThemeToggle className="nav-theme-toggle" />
           <button className="btn-primary" onClick={onLaunchApp}>Launch App</button>
         </div>
         <div 

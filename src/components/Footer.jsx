@@ -9,7 +9,7 @@ const Footer = () => {
               <span>Liquidnation</span>
             </div>
             <p className="footer-description">
-              The premier decentralized protocol for collateralized lending and borrowing.
+              The premier peer-to-peer cross-chain exchange platform.
             </p>
           </div>
           <div className="footer-section">

@@ -1,19 +1,19 @@
 # Liquidnation
 
-A decentralized liquidity protocol for collateralized lending and borrowing.
+A peer-to-peer cross-chain exchange platform.
 
 ## Overview
 
-Liquidnation is a modern DeFi protocol built with React that enables users to unlock liquidity from their digital assets without selling them. Built on blockchain technology, it provides a secure, transparent, and efficient platform for collateralized lending.
+Liquidnation is a modern DeFi protocol built with React that enables users to exchange assets seamlessly across multiple blockchains. Built on blockchain technology, it provides a secure, transparent, and efficient platform for P2P cross-chain trading.
 
 ## Features
 
-- **Instant Loans**: Access liquidity in seconds with our streamlined lending protocol
-- **Flexible Collateral**: Support for multiple asset types including NFTs and tokens
+- **Instant Swaps**: Exchange assets across chains in seconds with our streamlined protocol
+- **Multi-Chain Support**: Support for multiple blockchains and asset types including NFTs and tokens
 - **Decentralized**: Non-custodial protocol with full user control over assets
-- **Fair Rates**: Competitive interest rates driven by market dynamics
+- **Fair Exchange Rates**: Competitive rates driven by peer-to-peer market dynamics
 - **Secure Smart Contracts**: Audited by leading security firms for maximum protection
-- **Protected Deposits**: Insurance fund to protect lenders and borrowers
+- **Protected Trades**: Insurance fund to protect both parties in each exchange
 
 ## Getting Started
 

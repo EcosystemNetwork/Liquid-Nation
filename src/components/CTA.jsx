@@ -3,7 +3,7 @@ const CTA = ({ onLaunchApp }) => {
     <section className="cta-section">
       <div className="container">
         <div className="cta-content">
-          <h2>Ready to unlock your liquidity?</h2>
+          <h2>Ready to trade across chains?</h2>
           <p>Join thousands of users already using Liquidnation</p>
           <button className="btn-primary btn-large" onClick={onLaunchApp}>Launch App Now</button>
         </div>

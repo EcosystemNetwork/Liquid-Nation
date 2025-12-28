@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 function Settings() {
   const [username, setUsername] = useState('HunterBeast.eth');
   const [email, setEmail] = useState('');
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const { isDarkMode } = useTheme();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -70,15 +72,12 @@ function Settings() {
             </div>
 
             <div className="form-group">
-              <label className="form-checkbox">
-                <input
-                  type="checkbox"
-                  checked={darkMode}
-                  onChange={(e) => setDarkMode(e.target.checked)}
-                />
-                <span>Dark mode</span>
-              </label>
+              <label className="form-label">Dark mode</label>
               <p className="form-help">Use dark theme for the interface</p>
+              <div className="settings-theme-toggle-container">
+                <span className="theme-status">{isDarkMode ? 'Dark' : 'Light'} mode is active</span>
+                <ThemeToggle className="settings-theme-toggle" />
+              </div>
             </div>
 
             <div className="form-group">

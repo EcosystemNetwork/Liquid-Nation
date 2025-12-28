@@ -1,3 +1,5 @@
+import { heroStats } from '../data';
+
 const Hero = ({ onLaunchApp }) => {
   const handleLearnMore = (e) => {
     e.preventDefault();
@@ -27,18 +29,12 @@ const Hero = ({ onLaunchApp }) => {
             <button className="btn-secondary btn-large" onClick={handleLearnMore}>Learn More</button>
           </div>
           <div className="hero-stats">
-            <div className="stat-item">
-              <div className="stat-value">$2.5B+</div>
-              <div className="stat-label">Total Value Locked</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">50K+</div>
-              <div className="stat-label">Active Users</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">125K+</div>
-              <div className="stat-label">Loans Originated</div>
-            </div>
+            {heroStats.map((stat, index) => (
+              <div key={index} className="stat-item">
+                <div className="stat-value">{stat.value}</div>
+                <div className="stat-label">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

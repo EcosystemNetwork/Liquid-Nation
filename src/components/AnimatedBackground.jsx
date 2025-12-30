@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { animate } from 'animejs';
 
+// Animation constants
+const MAX_HOVER_SIZE = 12;
+const HOVER_SIZE_MULTIPLIER = 2;
+const MOUSE_INTERACTION_RADIUS = 200;
+const MOUSE_REPULSION_FORCE = 1.5;
+
 const AnimatedBackground = () => {
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
@@ -149,31 +155,36 @@ const AnimatedBackground = () => {
       });
     };
 
+    // Check if particle should be affected by mouse and apply repulsion
+    const applyMouseInteraction = (particle) => {
+      if (mouseRef.current.x === null || mouseRef.current.y === null) {
+        return false;
+      }
+
+      const dx = mouseRef.current.x - particle.x;
+      const dy = mouseRef.current.y - particle.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance < MOUSE_INTERACTION_RADIUS) {
+        // Repel particles away from mouse with stronger force
+        const force = (1 - distance / MOUSE_INTERACTION_RADIUS) * MOUSE_REPULSION_FORCE;
+        particle.x -= (dx / distance) * force;
+        particle.y -= (dy / distance) * force;
+        return true;
+      }
+      return false;
+    };
+
     // Update particles
     const updateParticles = () => {
       particlesRef.current.forEach(particle => {
-        // Mouse interaction
-        const shouldEnhanceSize = 
-          mouseRef.current.x !== null && 
-          mouseRef.current.y !== null &&
-          (() => {
-            const dx = mouseRef.current.x - particle.x;
-            const dy = mouseRef.current.y - particle.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const maxDistance = 200;
-            
-            if (distance < maxDistance) {
-              // Repel particles away from mouse with stronger force
-              const force = (1 - distance / maxDistance) * 1.5;
-              particle.x -= (dx / distance) * force;
-              particle.y -= (dy / distance) * force;
-              return true;
-            }
-            return false;
-          })();
+        // Apply mouse interaction and determine if particle should be enhanced
+        const isNearMouse = applyMouseInteraction(particle);
         
         // Set hover size based on proximity to mouse
-        particle.hoverSize = shouldEnhanceSize ? Math.min(particle.size * 2, 12) : particle.size;
+        particle.hoverSize = isNearMouse 
+          ? Math.min(particle.size * HOVER_SIZE_MULTIPLIER, MAX_HOVER_SIZE) 
+          : particle.size;
 
         particle.x += particle.speedX;
         particle.y += particle.speedY;

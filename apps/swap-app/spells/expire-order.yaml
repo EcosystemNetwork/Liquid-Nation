@@ -1,0 +1,67 @@
+# ============================================================================
+# EXPIRE ORDER SPELL
+# ============================================================================
+# Claims an expired order and returns tokens to maker
+#
+# Anyone can execute this spell after the order's expiry_height has passed.
+# This provides a permissionless cleanup mechanism for stale orders.
+#
+# EXPIRY CHECK:
+#   current_block_height > order.expiry_height
+#
+# FLOW:
+#   1. Verify current block height > expiry_height
+#   2. Order NFT is consumed
+#   3. Remaining tokens returned to maker
+#
+# REQUIRED VARIABLES:
+#   - app_id          : Swap app identity
+#   - app_vk          : Swap app verification key
+#   - offer_token_id  : Token that was offered
+#   - offer_token_vk  : Offer token verification key
+#   - order_utxo      : UTXO containing the expired order
+#   - addr_maker      : Maker's address to return tokens
+#   - remaining_amount: Amount of tokens remaining
+#   - current_height  : Current block height (must be > expiry)
+# ============================================================================
+
+version: 8
+
+apps:
+  $ORDER: n/${app_id}/${app_vk}
+  $OFFER: t/${offer_token_id}/${offer_token_vk}
+
+public_inputs:
+  $ORDER: "expire"
+
+private_inputs:
+  # Block height proof
+  $ORDER:
+    current_height: ${current_height}
+
+ins:
+  # Expired order with remaining tokens
+  - utxo_id: ${order_utxo}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey}
+        offer_app_id: ${offer_token_id}
+        offer_amount: ${offer_amount}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount}
+        dest_chain: ${dest_chain}
+        dest_address: ${dest_address}
+        expiry_height: ${expiry_height}  # Must be < current_height
+        allow_partial: ${allow_partial}
+        min_fill_amount: ${min_fill_amount}
+        status: ${current_status}
+        filled_amount: ${filled_amount}
+        created_at: ${created_at}
+      $OFFER: ${remaining_amount}
+
+outs:
+  # Return remaining tokens to maker
+  - address: ${addr_maker}
+    charms:
+      $OFFER: ${remaining_amount}
+

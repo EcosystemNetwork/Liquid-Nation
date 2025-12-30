@@ -1,32 +1,61 @@
-# Partial Fill Order Spell
-# Partially fills an order, updating the remaining amount
+# ============================================================================
+# PARTIAL FILL ORDER SPELL
+# ============================================================================
+# Partially fills an order, exchanging a portion of the tokens
 #
-# Variables:
-#   - app_id: Swap app identity
-#   - app_vk: Swap app verification key
-#   - offer_token_id: Token being offered
-#   - offer_token_vk: Offer token verification key
-#   - want_token_id: Token wanted (provided by taker)
-#   - want_token_vk: Want token verification key
-#   - order_utxo: UTXO containing the order
-#   - taker_utxo: Taker's UTXO with tokens
-#   - addr_escrow: Escrow address for remaining order
-#   - addr_maker: Maker's destination for partial payment
-#   - addr_taker: Taker's destination for partial tokens
-#   - fill_amount: Amount to fill
-#   - fill_want_amount: Proportional want amount
+# This spell allows takers to fill only part of an order when:
+#   - Order has allow_partial = true
+#   - Fill amount >= min_fill_amount
+#   - Fill amount <= remaining amount
+#
+# The order NFT is updated with new filled_amount and status,
+# remaining tokens stay in escrow for future fills.
+#
+# PROPORTIONAL PRICING:
+#   fill_want_amount = (fill_amount * want_amount) / offer_amount
+#
+# FLOW:
+#   1. Taker provides proportional wanted tokens
+#   2. Order NFT is updated (not consumed)
+#   3. Maker receives proportional wanted tokens
+#   4. Taker receives proportional offered tokens
+#   5. Remaining tokens stay in escrow
+#
+# REQUIRED VARIABLES:
+#   - app_id            : Swap app identity
+#   - app_vk            : Swap app verification key
+#   - offer_token_id    : Token being offered
+#   - offer_token_vk    : Offer token verification key
+#   - want_token_id     : Token wanted (taker provides)
+#   - want_token_vk     : Want token verification key
+#   - order_utxo        : UTXO containing the order
+#   - taker_utxo        : Taker's UTXO with tokens
+#   - addr_escrow       : Escrow address for remaining order
+#   - addr_maker        : Maker's destination for partial payment
+#   - addr_taker        : Taker's destination for partial tokens
+#   - fill_amount       : Amount of offer tokens to fill
+#   - fill_want_amount  : Proportional want amount
+#   - current_remaining : Current remaining offer tokens
+#   - new_remaining     : Remaining after this fill
+#   - new_filled        : New filled amount
+#   - new_status        : New order status (0, 1, or 3)
+# ============================================================================
 
 version: 8
 
 apps:
+  # Order NFT app
   $ORDER: n/${app_id}/${app_vk}
+  # Offered token
   $OFFER: t/${offer_token_id}/${offer_token_vk}
+  # Wanted token
   $WANT: t/${want_token_id}/${want_token_vk}
 
 public_inputs:
   $ORDER: "partial_fill"
 
 private_inputs:
+  # Partial fill execution data
   $ORDER:
     taker_pubkey: ${taker_pubkey}
     fill_amount: ${fill_amount}
@@ -45,18 +74,20 @@ ins:
         dest_chain: ${dest_chain}
         dest_address: ${dest_address}
         expiry_height: ${expiry_height}
-        allow_partial: true
-        status: 0
+        allow_partial: true  # Must be true for partial fills
+        min_fill_amount: ${min_fill_amount}
+        status: ${current_status}  # 0 (Open) or 3 (PartialFilled)
         filled_amount: ${current_filled}
+        created_at: ${created_at}
       $OFFER: ${current_remaining}
   
-  # Taker's tokens
+  # Taker's tokens (proportional amount)
   - utxo_id: ${taker_utxo}
     charms:
       $WANT: ${fill_want_amount}
 
 outs:
-  # Updated order with remaining tokens
+  # Output 1: Updated order with remaining tokens
   - address: ${addr_escrow}
     charms:
       $ORDER:
@@ -69,17 +100,18 @@ outs:
         dest_address: ${dest_address}
         expiry_height: ${expiry_height}
         allow_partial: true
-        status: ${new_status}
+        min_fill_amount: ${min_fill_amount}
+        status: ${new_status}  # 1 if fully filled, 3 if still partial
         filled_amount: ${new_filled}
+        created_at: ${created_at}
       $OFFER: ${new_remaining}
   
-  # Maker receives proportional want tokens
+  # Output 2: Maker receives proportional wanted tokens
   - address: ${addr_maker}
     charms:
       $WANT: ${fill_want_amount}
   
-  # Taker receives proportional offer tokens
+  # Output 3: Taker receives proportional offered tokens
   - address: ${addr_taker}
     charms:
       $OFFER: ${fill_amount}
-

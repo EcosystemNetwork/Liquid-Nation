@@ -1,0 +1,93 @@
+# ============================================================================
+# UPDATE ORDER SPELL
+# ============================================================================
+# Updates order parameters (price, expiry, partial settings)
+#
+# Only the maker can update their order. This allows adjusting the
+# trading terms without cancelling and recreating the order.
+#
+# UPDATABLE FIELDS:
+#   - want_amount (price adjustment)
+#   - expiry_height (extend/shorten expiry)
+#   - allow_partial (enable/disable partial fills)
+#   - min_fill_amount (minimum partial fill size)
+#   - dest_address (change destination)
+#
+# NON-UPDATABLE FIELDS:
+#   - maker_pubkey, offer_app_id, offer_amount (core identity)
+#
+# FLOW:
+#   1. Maker signs update request
+#   2. Order NFT is consumed
+#   3. New order NFT created with updated parameters
+#
+# REQUIRED VARIABLES:
+#   - app_id              : Swap app identity
+#   - app_vk              : Swap app verification key
+#   - offer_token_id      : Token that was offered
+#   - offer_token_vk      : Offer token verification key
+#   - order_utxo          : UTXO containing the order
+#   - addr_escrow         : Escrow address for updated order
+#   - new_want_amount     : New want amount (price)
+#   - new_expiry_height   : New expiry height
+#   - new_allow_partial   : New partial fill setting
+#   - new_min_fill_amount : New minimum fill amount
+#   - new_dest_address    : New destination address
+# ============================================================================
+
+version: 8
+
+apps:
+  $ORDER: n/${app_id}/${app_vk}
+  $OFFER: t/${offer_token_id}/${offer_token_vk}
+
+public_inputs:
+  $ORDER: "update"
+
+private_inputs:
+  # Update authorization
+  $ORDER:
+    maker_signature: ${maker_signature}
+    new_want_amount: ${new_want_amount}
+    new_expiry_height: ${new_expiry_height}
+
+ins:
+  # Current order
+  - utxo_id: ${order_utxo}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey}
+        offer_app_id: ${offer_token_id}
+        offer_amount: ${offer_amount}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount}
+        dest_chain: ${dest_chain}
+        dest_address: ${dest_address}
+        expiry_height: ${expiry_height}
+        allow_partial: ${allow_partial}
+        min_fill_amount: ${min_fill_amount}
+        status: ${current_status}
+        filled_amount: ${filled_amount}
+        created_at: ${created_at}
+      $OFFER: ${remaining_amount}
+
+outs:
+  # Updated order
+  - address: ${addr_escrow}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey}  # Unchanged
+        offer_app_id: ${offer_token_id}  # Unchanged
+        offer_amount: ${offer_amount}  # Unchanged
+        want_app_id: ${want_token_id}  # Unchanged
+        want_amount: ${new_want_amount}  # Updated
+        dest_chain: ${dest_chain}
+        dest_address: ${new_dest_address}  # Updated
+        expiry_height: ${new_expiry_height}  # Updated
+        allow_partial: ${new_allow_partial}  # Updated
+        min_fill_amount: ${new_min_fill_amount}  # Updated
+        status: ${current_status}  # Preserved
+        filled_amount: ${filled_amount}  # Preserved
+        created_at: ${created_at}  # Preserved
+      $OFFER: ${remaining_amount}
+

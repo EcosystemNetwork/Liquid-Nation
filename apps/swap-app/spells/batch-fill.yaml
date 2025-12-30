@@ -1,0 +1,111 @@
+# ============================================================================
+# BATCH FILL ORDERS SPELL
+# ============================================================================
+# Fills multiple orders in a single atomic transaction
+#
+# Enables efficient order matching by combining multiple swaps:
+#   - Gas/fee efficiency (single tx instead of many)
+#   - Atomic execution (all or nothing)
+#   - Arbitrage prevention (no front-running between fills)
+#
+# USE CASES:
+#   - Market makers filling multiple small orders
+#   - DEX aggregators routing through multiple orders
+#   - Arbitrageurs balancing orderbook
+#
+# LIMITS:
+#   - Maximum orders per batch depends on transaction size
+#   - All orders must have same want_token_id
+#
+# REQUIRED VARIABLES:
+#   - app_id              : Swap app identity
+#   - app_vk              : Swap app verification key
+#   - offer_token_id_N    : Token offered by order N
+#   - offer_token_vk_N    : Offer token verification key
+#   - want_token_id       : Common wanted token
+#   - want_token_vk       : Want token verification key
+#   - order_utxo_N        : UTXO containing order N
+#   - taker_utxo          : Taker's UTXO with wanted tokens
+#   - addr_maker_N        : Maker N's destination
+#   - addr_taker          : Taker's destination
+#   - total_want_amount   : Total wanted tokens provided
+# ============================================================================
+
+version: 8
+
+apps:
+  $ORDER: n/${app_id}/${app_vk}
+  $OFFER_1: t/${offer_token_id_1}/${offer_token_vk_1}
+  $OFFER_2: t/${offer_token_id_2}/${offer_token_vk_2}
+  $WANT: t/${want_token_id}/${want_token_vk}
+
+public_inputs:
+  $ORDER: "batch_fill"
+
+private_inputs:
+  $ORDER:
+    taker_pubkey: ${taker_pubkey}
+    order_count: 2
+    fill_amounts: [${fill_amount_1}, ${fill_amount_2}]
+
+ins:
+  # Order 1
+  - utxo_id: ${order_utxo_1}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey_1}
+        offer_app_id: ${offer_token_id_1}
+        offer_amount: ${offer_amount_1}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount_1}
+        dest_chain: 0
+        dest_address: ${dest_address_1}
+        expiry_height: ${expiry_height_1}
+        allow_partial: ${allow_partial_1}
+        min_fill_amount: ${min_fill_amount_1}
+        status: 0
+        filled_amount: 0
+        created_at: ${created_at_1}
+      $OFFER_1: ${offer_amount_1}
+  
+  # Order 2
+  - utxo_id: ${order_utxo_2}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey_2}
+        offer_app_id: ${offer_token_id_2}
+        offer_amount: ${offer_amount_2}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount_2}
+        dest_chain: 0
+        dest_address: ${dest_address_2}
+        expiry_height: ${expiry_height_2}
+        allow_partial: ${allow_partial_2}
+        min_fill_amount: ${min_fill_amount_2}
+        status: 0
+        filled_amount: 0
+        created_at: ${created_at_2}
+      $OFFER_2: ${offer_amount_2}
+  
+  # Taker's tokens (combined amount for all orders)
+  - utxo_id: ${taker_utxo}
+    charms:
+      $WANT: ${total_want_amount}
+
+outs:
+  # Maker 1 receives their share
+  - address: ${addr_maker_1}
+    charms:
+      $WANT: ${want_amount_1}
+  
+  # Maker 2 receives their share
+  - address: ${addr_maker_2}
+    charms:
+      $WANT: ${want_amount_2}
+  
+  # Taker receives all offered tokens
+  - address: ${addr_taker}
+    charms:
+      $OFFER_1: ${offer_amount_1}
+      $OFFER_2: ${offer_amount_2}
+

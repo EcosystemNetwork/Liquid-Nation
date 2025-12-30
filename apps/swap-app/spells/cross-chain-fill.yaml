@@ -1,0 +1,91 @@
+# ============================================================================
+# CROSS-CHAIN FILL ORDER SPELL
+# ============================================================================
+# Fills an order with cross-chain token delivery
+#
+# This spell handles swaps where the wanted token exists on a different
+# blockchain. Uses Charms "beaming" to transfer tokens cross-chain.
+#
+# SUPPORTED CHAINS:
+#   0 = Bitcoin (native)
+#   1 = Cardano
+#   2 = EVM (Ethereum, Base, Arbitrum, etc.)
+#
+# CROSS-CHAIN FLOW:
+#   1. Taker provides Bitcoin-side tokens OR proof of cross-chain deposit
+#   2. Order NFT is consumed
+#   3. Maker receives tokens (or cross-chain claim ticket)
+#   4. Taker receives offered tokens on Bitcoin
+#
+# For full cross-chain: Use with bridge/beam contracts
+#
+# REQUIRED VARIABLES:
+#   - app_id              : Swap app identity
+#   - app_vk              : Swap app verification key
+#   - offer_token_id      : Token offered (on Bitcoin)
+#   - offer_token_vk      : Offer token verification key
+#   - beam_app_id         : Beam/bridge app identity
+#   - beam_app_vk         : Beam app verification key
+#   - order_utxo          : UTXO containing the order
+#   - addr_taker          : Taker's Bitcoin address
+#   - cross_chain_proof   : Proof of cross-chain deposit/lock
+#   - dest_chain_tx_hash  : Transaction hash on destination chain
+# ============================================================================
+
+version: 8
+
+apps:
+  $ORDER: n/${app_id}/${app_vk}
+  $OFFER: t/${offer_token_id}/${offer_token_vk}
+  # Beam ticket for cross-chain claim
+  $BEAM: n/${beam_app_id}/${beam_app_vk}
+
+public_inputs:
+  $ORDER: "cross_chain_fill"
+
+private_inputs:
+  # Cross-chain proof data
+  $ORDER:
+    taker_pubkey: ${taker_pubkey}
+    cross_chain_proof: ${cross_chain_proof}
+    dest_chain_tx_hash: ${dest_chain_tx_hash}
+    dest_chain: ${dest_chain}
+
+ins:
+  # Order with locked offer tokens
+  - utxo_id: ${order_utxo}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey}
+        offer_app_id: ${offer_token_id}
+        offer_amount: ${offer_amount}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount}
+        dest_chain: ${dest_chain}  # Non-zero for cross-chain
+        dest_address: ${dest_address}
+        expiry_height: ${expiry_height}
+        allow_partial: ${allow_partial}
+        min_fill_amount: ${min_fill_amount}
+        status: 0
+        filled_amount: 0
+        created_at: ${created_at}
+      $OFFER: ${offer_amount}
+
+outs:
+  # Beam ticket for maker to claim on destination chain
+  - address: ${addr_maker}
+    charms:
+      $BEAM:
+        recipient: ${dest_address}
+        token_id: ${want_token_id}
+        amount: ${want_amount}
+        source_chain: 0  # Bitcoin
+        dest_chain: ${dest_chain}
+        proof_hash: ${cross_chain_proof}
+        expires_at: ${beam_expiry}
+  
+  # Taker receives offered tokens on Bitcoin
+  - address: ${addr_taker}
+    charms:
+      $OFFER: ${offer_amount}
+

@@ -1,39 +1,62 @@
-# Fill Order Spell
-# Executes an atomic swap by filling an open order
+# ============================================================================
+# FILL ORDER SPELL (Atomic Swap)
+# ============================================================================
+# Executes a complete atomic swap by filling an open order
 #
-# Variables:
-#   - app_id: Swap app identity
-#   - app_vk: Swap app verification key
-#   - offer_token_id: Token being offered by maker
-#   - offer_token_vk: Offer token verification key
-#   - want_token_id: Token wanted by maker (provided by taker)
-#   - want_token_vk: Want token verification key
-#   - order_utxo: UTXO containing the order
-#   - taker_utxo: Taker's UTXO with the wanted tokens
-#   - addr_maker: Maker's destination address
-#   - addr_taker: Taker's destination address
-#   - offer_amount: Amount being swapped
-#   - want_amount: Amount taker provides
-#   - taker_pubkey: Taker's public key
+# This spell atomically exchanges tokens between maker and taker:
+#   - Maker receives the wanted tokens at their destination
+#   - Taker receives the offered tokens at their destination
+#   - Order NFT is consumed (no longer exists)
+#
+# ATOMICITY:
+#   Both transfers happen in the same transaction - either both succeed
+#   or neither does. No counterparty risk.
+#
+# FLOW:
+#   1. Taker provides the wanted tokens
+#   2. Order NFT + locked tokens are consumed
+#   3. Maker receives wanted tokens
+#   4. Taker receives offered tokens
+#
+# REQUIRED VARIABLES:
+#   - app_id          : Swap app identity
+#   - app_vk          : Swap app verification key
+#   - offer_token_id  : Token offered by maker
+#   - offer_token_vk  : Offer token verification key
+#   - want_token_id   : Token wanted by maker (taker provides)
+#   - want_token_vk   : Want token verification key
+#   - order_utxo      : UTXO containing the order
+#   - taker_utxo      : Taker's UTXO with wanted tokens
+#   - addr_maker      : Maker's destination address
+#   - addr_taker      : Taker's destination address
+#   - taker_pubkey    : Taker's public key
+#
+# ORDER STATE (from order_utxo):
+#   - maker_pubkey, offer_amount, want_amount, etc.
+# ============================================================================
 
 version: 8
 
 apps:
+  # Order NFT app
   $ORDER: n/${app_id}/${app_vk}
+  # Offered token (from maker to taker)
   $OFFER: t/${offer_token_id}/${offer_token_vk}
+  # Wanted token (from taker to maker)
   $WANT: t/${want_token_id}/${want_token_vk}
 
 public_inputs:
   $ORDER: "fill"
 
 private_inputs:
+  # Fill execution data
   $ORDER:
     taker_pubkey: ${taker_pubkey}
     fill_amount: ${offer_amount}
     taker_dest_address: ${addr_taker}
 
 ins:
-  # Order with locked offer tokens
+  # Input 1: Order with locked offer tokens
   - utxo_id: ${order_utxo}
     charms:
       $ORDER:
@@ -46,23 +69,24 @@ ins:
         dest_address: ${dest_address}
         expiry_height: ${expiry_height}
         allow_partial: ${allow_partial}
-        status: 0
+        min_fill_amount: ${min_fill_amount}
+        status: 0  # Must be Open
         filled_amount: 0
+        created_at: ${created_at}
       $OFFER: ${offer_amount}
   
-  # Taker's tokens
+  # Input 2: Taker's tokens (wanted by maker)
   - utxo_id: ${taker_utxo}
     charms:
       $WANT: ${want_amount}
 
 outs:
-  # Maker receives wanted tokens
+  # Output 1: Maker receives wanted tokens
   - address: ${addr_maker}
     charms:
       $WANT: ${want_amount}
   
-  # Taker receives offered tokens
+  # Output 2: Taker receives offered tokens
   - address: ${addr_taker}
     charms:
       $OFFER: ${offer_amount}
-

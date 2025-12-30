@@ -1,25 +1,51 @@
-# Cancel Order Spell
-# Cancels an open order and returns tokens to maker
+# ============================================================================
+# CANCEL ORDER SPELL
+# ============================================================================
+# Cancels an open order and returns locked tokens to the maker
 #
-# Variables:
-#   - app_id: Swap app identity
-#   - app_vk: Swap app verification key
-#   - offer_token_id: Token that was offered
-#   - offer_token_vk: Offer token verification key
-#   - order_utxo: UTXO containing the order
-#   - addr_maker: Maker's address to return tokens
+# Only the order maker can cancel their order. The order must be in
+# Open or PartialFilled status. All remaining tokens are returned.
+#
+# AUTHORIZATION:
+#   The spell must be signed by the maker's private key corresponding
+#   to maker_pubkey in the order state.
+#
+# FLOW:
+#   1. Maker signs cancellation request
+#   2. Order NFT is consumed
+#   3. Remaining tokens returned to maker
+#
+# REQUIRED VARIABLES:
+#   - app_id          : Swap app identity
+#   - app_vk          : Swap app verification key
+#   - offer_token_id  : Token that was offered
+#   - offer_token_vk  : Offer token verification key
+#   - order_utxo      : UTXO containing the order
+#   - addr_maker      : Maker's address to return tokens
+#   - remaining_amount: Amount of tokens remaining (offer_amount - filled)
+#
+# ORDER STATE (from order_utxo):
+#   - All order fields for verification
+# ============================================================================
 
 version: 8
 
 apps:
+  # Order NFT app
   $ORDER: n/${app_id}/${app_vk}
+  # Offered token to return
   $OFFER: t/${offer_token_id}/${offer_token_vk}
 
 public_inputs:
   $ORDER: "cancel"
 
+private_inputs:
+  # Cancellation proof (maker's signature)
+  $ORDER:
+    maker_signature: ${maker_signature}
+
 ins:
-  # Order with locked tokens
+  # Order with remaining locked tokens
   - utxo_id: ${order_utxo}
     charms:
       $ORDER:
@@ -32,13 +58,14 @@ ins:
         dest_address: ${dest_address}
         expiry_height: ${expiry_height}
         allow_partial: ${allow_partial}
-        status: 0
+        min_fill_amount: ${min_fill_amount}
+        status: ${current_status}  # 0 (Open) or 3 (PartialFilled)
         filled_amount: ${filled_amount}
+        created_at: ${created_at}
       $OFFER: ${remaining_amount}
 
 outs:
-  # Return tokens to maker
+  # Return remaining tokens to maker
   - address: ${addr_maker}
     charms:
       $OFFER: ${remaining_amount}
-

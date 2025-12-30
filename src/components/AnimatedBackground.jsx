@@ -4,9 +4,9 @@ import { animate } from 'animejs';
 const AnimatedBackground = () => {
   const canvasRef = useRef(null);
   const particlesRef = useRef([]);
-  const linesRef = useRef([]);
   const animationRef = useRef(null);
   const themeRef = useRef('dark');
+  const shapesRef = useRef([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -69,6 +69,7 @@ const AnimatedBackground = () => {
 
     particlesRef.current = createParticles();
     const shapes = createShapes();
+    shapesRef.current = shapes;
 
     // Get theme colors
     const getColors = () => {
@@ -161,38 +162,39 @@ const AnimatedBackground = () => {
     };
 
     // Animation loop
-    const animate = () => {
+    const animateCanvas = () => {
       ctx.clearRect(0, 0, width, height);
       
       updateParticles();
-      drawShapes(shapes);
+      drawShapes(shapesRef.current);
       drawConnections();
       drawParticles();
       
-      animationRef.current = requestAnimationFrame(animate);
+      animationRef.current = requestAnimationFrame(animateCanvas);
     };
 
     // Animate shapes with anime.js
-    shapes.forEach((shape, index) => {
+    shapesRef.current.forEach((shape, index) => {
+      // Rotate shapes continuously
       animate(shape, {
-        rotation: shape.rotation + Math.PI * 2,
+        rotation: `+=${Math.PI * 2}`,
         duration: 20000 + index * 2000,
         ease: 'linear',
         loop: true
       });
 
+      // Move shapes around
       animate(shape, {
-        x: [shape.x, Math.random() * width],
-        y: [shape.y, Math.random() * height],
-        duration: 15000 + index * 1000,
+        x: [shape.x, Math.random() * width, shape.x],
+        y: [shape.y, Math.random() * height, shape.y],
+        duration: 30000 + index * 2000,
         ease: 'inOut(sine)',
-        loop: true,
-        alternate: true
+        loop: true
       });
     });
 
     // Start animation
-    animate();
+    animateCanvas();
 
     // Handle window resize
     const handleResize = () => {

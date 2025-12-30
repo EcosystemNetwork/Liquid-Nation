@@ -38,7 +38,8 @@ function Dashboard({ chainThemes, onNavigate }) {
   
   // Filter for user's orders (orders created by the current user)
   // For demo purposes, we identify user orders by the placeholder name used in OrderContext
-  const userOrders = orders.filter(order => order.name === '0xAB5....39c81');
+  const currentUserName = '0xAB5....39c81';
+  const userOrders = orders.filter(order => order.name === currentUserName);
   
   // Pagination state
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -104,7 +105,7 @@ function Dashboard({ chainThemes, onNavigate }) {
     if (userOrders.length === 0) return;
     
     if (window.confirm(`Are you sure you want to cancel all ${userOrders.length} order${userOrders.length > 1 ? 's' : ''}?`)) {
-      cancelAllOrders('0xAB5....39c81');
+      cancelAllOrders(currentUserName);
       setCurrentPage(1); // Reset to first page
     }
   };

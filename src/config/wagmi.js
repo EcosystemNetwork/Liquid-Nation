@@ -7,10 +7,15 @@ import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors';
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'YOUR_WALLETCONNECT_PROJECT_ID';
 
 if (projectId === 'YOUR_WALLETCONNECT_PROJECT_ID') {
-  console.warn(
+  const message = 
     'WalletConnect Project ID not configured. Please set VITE_WALLETCONNECT_PROJECT_ID environment variable. ' +
-    'Get your project ID from https://cloud.walletconnect.com/'
-  );
+    'Get your project ID from https://cloud.walletconnect.com/';
+  
+  if (import.meta.env.PROD) {
+    throw new Error(message);
+  } else {
+    console.warn(message);
+  }
 }
 
 export const config = createConfig({

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useOrders } from '../context/OrderContext';
+import { useWallet } from '../context/WalletContext';
+import { useEVMWallet } from '../context/EVMWalletContext';
 
 function Avatar({ symbol, color }) {
   return (
@@ -35,10 +37,16 @@ function StatusCell({ percent }) {
 
 function Dashboard({ chainThemes, onNavigate }) {
   const { orders, deleteOrder } = useOrders();
+  const { address: btcAddress } = useWallet();
+  const { address: evmAddress } = useEVMWallet();
   
-  // Filter for user's orders (orders created by the current user)
-  // For demo purposes, we identify user orders by the placeholder name used in OrderContext
-  const userOrders = orders.filter(order => order.name === '0xAB5....39c81');
+  // Filter for user's orders based on connected wallet addresses
+  // An order belongs to the user if either their BTC or EVM wallet matches
+  const userOrders = orders.filter(order => {
+    if (!btcAddress && !evmAddress) return false;
+    return (btcAddress && order.btcWallet === btcAddress) || 
+           (evmAddress && order.evmWallet === evmAddress);
+  });
   
   // Pagination state
   const [itemsPerPage, setItemsPerPage] = useState(10);

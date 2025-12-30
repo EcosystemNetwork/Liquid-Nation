@@ -10,12 +10,19 @@ import Dashboard from './components/Dashboard';
 import Offers from './components/Offers';
 import CreateOrder from './components/CreateOrder';
 import Settings from './components/Settings';
+import Swap from './components/Swap';
 import ThemeToggle from './components/ThemeToggle';
+import WalletConnect from './components/WalletConnect';
 import { chainThemes } from './data';
 import { OrderProvider } from './context/OrderContext';
+import { useWallet } from './context/WalletContext';
+import { useEVMWallet } from './context/EVMWalletContext';
 
 function MainApp({ onBackToLanding }) {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const { address: btcAddress, connected: btcConnected } = useWallet();
+  const { address: evmAddress, connected: evmConnected } = useEVMWallet();
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
@@ -29,11 +36,18 @@ function MainApp({ onBackToLanding }) {
         return <Offers chainThemes={chainThemes} onNavigate={handleNavigate} />;
       case 'create':
         return <CreateOrder chainThemes={chainThemes} onNavigate={handleNavigate} />;
+      case 'swap':
+        return <Swap chainThemes={chainThemes} />;
       case 'settings':
         return <Settings />;
       default:
         return <Dashboard chainThemes={chainThemes} onNavigate={handleNavigate} />;
     }
+  };
+
+  const formatAddress = (addr) => {
+    if (!addr) return '';
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   return (
@@ -49,9 +63,42 @@ function MainApp({ onBackToLanding }) {
         </button>
         <div className="top-bar-actions">
           <ThemeToggle className="top-bar-theme-toggle" />
-          <div className="wallet-pill">0x123...</div>
+          <div className="wallet-group">
+            {btcConnected && (
+              <div className="wallet-pill connected" title="Bitcoin Wallet">
+                <span className="wallet-label">BTC:</span> {formatAddress(btcAddress)}
+              </div>
+            )}
+            {evmConnected && (
+              <div className="wallet-pill connected" title="EVM Wallet">
+                <span className="wallet-label">EVM:</span> {formatAddress(evmAddress)}
+              </div>
+            )}
+            {!btcConnected && !evmConnected && (
+              <button 
+                className="wallet-pill" 
+                onClick={() => setShowWalletModal(true)}
+                type="button"
+              >
+                Connect Wallet
+              </button>
+            )}
+            {(btcConnected || evmConnected) && (
+              <button 
+                className="wallet-pill secondary" 
+                onClick={() => setShowWalletModal(true)}
+                type="button"
+              >
+                +
+              </button>
+            )}
+          </div>
         </div>
       </header>
+
+      {showWalletModal && (
+        <WalletConnect onClose={() => setShowWalletModal(false)} />
+      )}
 
       <main className="main-stage">
         {renderPage()}
@@ -71,6 +118,13 @@ function MainApp({ onBackToLanding }) {
           type="button"
         >
           Offers
+        </button>
+        <button 
+          className={`nav-item ${currentPage === 'swap' ? 'active' : ''}`}
+          onClick={() => handleNavigate('swap')}
+          type="button"
+        >
+          Swap
         </button>
         <button 
           className={`nav-item ${currentPage === 'create' ? 'active' : ''}`}

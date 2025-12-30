@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { useOrders } from '../context/OrderContext';
+import { useWallet } from '../context/WalletContext';
+import { useEVMWallet } from '../context/EVMWalletContext';
 
 function CreateOrder({ chainThemes, onNavigate }) {
   const { createOrder } = useOrders();
+  const { address: btcAddress, connected: btcConnected } = useWallet();
+  const { address: evmAddress, connected: evmConnected } = useEVMWallet();
+  
   const [orderType, setOrderType] = useState('limit-buy');
-  const [asset, setAsset] = useState('');
+  const [asset, setAsset] = useState('BTC');
   const [amount, setAmount] = useState('');
   const [chain, setChain] = useState('ETH');
   const [acceptedTokens, setAcceptedTokens] = useState([]);
@@ -12,6 +17,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const [premium, setPremium] = useState('');
 
   const chains = Object.keys(chainThemes);
+  const availableAssets = chains; // Use the same chains/tokens as available assets
 
   const handleTokenToggle = (token) => {
     if (acceptedTokens.includes(token)) {
@@ -24,7 +30,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Create the order with all the form data
+    // Create the order with all the form data including wallet addresses
     const newOrder = {
       orderType,
       asset: `${amount} ${asset}`,
@@ -32,13 +38,15 @@ function CreateOrder({ chainThemes, onNavigate }) {
       accepts: acceptedTokens,
       partial: partialFills,
       premium: `${premium}%`,
+      btcWallet: btcAddress,
+      evmWallet: evmAddress,
     };
     
     createOrder(newOrder);
     
     // Reset form
     setOrderType('limit-buy');
-    setAsset('');
+    setAsset('BTC');
     setAmount('');
     setChain('ETH');
     setAcceptedTokens([]);
@@ -96,15 +104,19 @@ function CreateOrder({ chainThemes, onNavigate }) {
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label" htmlFor="asset">Asset</label>
-              <input
-                type="text"
+              <select
                 id="asset"
-                className="form-input"
+                className="form-select"
                 value={asset}
                 onChange={(e) => setAsset(e.target.value)}
-                placeholder="e.g., ETH, BTC, USDC"
                 required
-              />
+              >
+                {availableAssets.map(assetName => (
+                  <option key={assetName} value={assetName}>
+                    {chainThemes[assetName].label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
@@ -149,6 +161,47 @@ function CreateOrder({ chainThemes, onNavigate }) {
                 step="0.01"
                 required
               />
+            </div>
+          </div>
+
+          <div className="form-section">
+            <label className="form-label">Wallet Selection</label>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label" htmlFor="btcWallet">Bitcoin Wallet</label>
+                {btcConnected ? (
+                  <div className="wallet-display" style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.9em', padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                    {btcAddress}
+                  </div>
+                ) : (
+                  <>
+                    <div className="wallet-display" style={{ padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-subtle)' }}>
+                      No Bitcoin wallet connected
+                    </div>
+                    <p className="form-help" style={{ color: 'orange', marginTop: '8px' }}>
+                      Please connect a Bitcoin wallet to create orders
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="evmWallet">EVM Wallet</label>
+                {evmConnected ? (
+                  <div className="wallet-display" style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.9em', padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                    {evmAddress}
+                  </div>
+                ) : (
+                  <>
+                    <div className="wallet-display" style={{ padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-subtle)' }}>
+                      No EVM wallet connected
+                    </div>
+                    <p className="form-help" style={{ color: 'orange', marginTop: '8px' }}>
+                      Connect an EVM wallet for cross-chain orders
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

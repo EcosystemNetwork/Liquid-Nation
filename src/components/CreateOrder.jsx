@@ -15,15 +15,8 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const [acceptedTokens, setAcceptedTokens] = useState([]);
   const [partialFills, setPartialFills] = useState(true);
   const [premium, setPremium] = useState('');
-  const [selectedBTCWallet, setSelectedBTCWallet] = useState('');
-  const [selectedEVMWallet, setSelectedEVMWallet] = useState('');
 
   const chains = Object.keys(chainThemes);
-
-  const formatWalletAddress = (addr) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
 
   const handleTokenToggle = (token) => {
     if (acceptedTokens.includes(token)) {
@@ -36,7 +29,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Create the order with all the form data including wallet selections
+    // Create the order with all the form data including wallet addresses
     const newOrder = {
       orderType,
       asset: `${amount} ${asset}`,
@@ -44,8 +37,8 @@ function CreateOrder({ chainThemes, onNavigate }) {
       accepts: acceptedTokens,
       partial: partialFills,
       premium: `${premium}%`,
-      btcWallet: selectedBTCWallet || btcAddress,
-      evmWallet: selectedEVMWallet || evmAddress,
+      btcWallet: btcAddress,
+      evmWallet: evmAddress,
     };
     
     createOrder(newOrder);
@@ -58,8 +51,6 @@ function CreateOrder({ chainThemes, onNavigate }) {
     setAcceptedTokens([]);
     setPartialFills(true);
     setPremium('');
-    setSelectedBTCWallet('');
-    setSelectedEVMWallet('');
     
     // Navigate back to dashboard to see the newly created order
     if (onNavigate) {
@@ -173,51 +164,37 @@ function CreateOrder({ chainThemes, onNavigate }) {
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label" htmlFor="btcWallet">Bitcoin Wallet</label>
-                <select
-                  id="btcWallet"
-                  className="form-select"
-                  value={selectedBTCWallet}
-                  onChange={(e) => setSelectedBTCWallet(e.target.value)}
-                  disabled={!btcConnected}
-                >
-                  <option value="">
-                    {btcConnected ? `Use connected: ${formatWalletAddress(btcAddress)}` : 'No Bitcoin wallet connected'}
-                  </option>
-                  {btcConnected && (
-                    <option value={btcAddress}>
-                      {formatWalletAddress(btcAddress)}
-                    </option>
-                  )}
-                </select>
-                {!btcConnected && (
-                  <p className="form-help" style={{ color: 'orange' }}>
-                    Please connect a Bitcoin wallet to create orders
-                  </p>
+                {btcConnected ? (
+                  <div className="wallet-display" style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.9em', padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                    {btcAddress}
+                  </div>
+                ) : (
+                  <>
+                    <div className="wallet-display" style={{ padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-subtle)' }}>
+                      No Bitcoin wallet connected
+                    </div>
+                    <p className="form-help" style={{ color: 'orange', marginTop: '8px' }}>
+                      Please connect a Bitcoin wallet to create orders
+                    </p>
+                  </>
                 )}
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="evmWallet">EVM Wallet</label>
-                <select
-                  id="evmWallet"
-                  className="form-select"
-                  value={selectedEVMWallet}
-                  onChange={(e) => setSelectedEVMWallet(e.target.value)}
-                  disabled={!evmConnected}
-                >
-                  <option value="">
-                    {evmConnected ? `Use connected: ${formatWalletAddress(evmAddress)}` : 'No EVM wallet connected'}
-                  </option>
-                  {evmConnected && (
-                    <option value={evmAddress}>
-                      {formatWalletAddress(evmAddress)}
-                    </option>
-                  )}
-                </select>
-                {!evmConnected && (
-                  <p className="form-help" style={{ color: 'orange' }}>
-                    Connect an EVM wallet for cross-chain orders
-                  </p>
+                {evmConnected ? (
+                  <div className="wallet-display" style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.9em', padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                    {evmAddress}
+                  </div>
+                ) : (
+                  <>
+                    <div className="wallet-display" style={{ padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-subtle)' }}>
+                      No EVM wallet connected
+                    </div>
+                    <p className="form-help" style={{ color: 'orange', marginTop: '8px' }}>
+                      Connect an EVM wallet for cross-chain orders
+                    </p>
+                  </>
                 )}
               </div>
             </div>

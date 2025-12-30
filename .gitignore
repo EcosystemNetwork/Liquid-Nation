@@ -40,3 +40,5 @@ Cargo.lock
 *.db
 *.sqlite
 
+# Lock files (keep pnpm-lock.yaml only)
+package-lock.json

@@ -30,6 +30,16 @@ function WalletConnect({ onClose }) {
       onClose();
     } catch (error) {
       console.error('Failed to connect wallet:', error);
+      // Show user-friendly error message
+      let errorMessage = 'Failed to connect wallet. ';
+      if (error.message?.includes('not found') || error.message?.includes('not installed')) {
+        errorMessage += 'Please make sure the wallet extension is installed.';
+      } else if (error.message?.includes('rejected') || error.message?.includes('denied')) {
+        errorMessage += 'Connection was rejected by user.';
+      } else {
+        errorMessage += 'Please try again or select a different wallet.';
+      }
+      alert(errorMessage);
     }
   };
 

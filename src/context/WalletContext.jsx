@@ -1,4 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
+/* Disabling react-refresh/only-export-components because this file exports both 
+   context utilities and provider components, which is a common pattern for context modules */
 import { createContext, useContext } from 'react';
 import { LaserEyesProvider, useLaserEyes, MAINNET } from '@omnisat/lasereyes-react';
 

@@ -16,6 +16,11 @@ function Settings() {
     alert('Settings saved!');
   };
 
+  const formatAddress = (addr) => {
+    if (!addr) return 'Not Connected';
+    return `${addr.slice(0, 8)}...${addr.slice(-8)}`;
+  };
+
   return (
     <section className="offers-panel" aria-label="Settings">
       <div className="panel-header">
@@ -53,7 +58,7 @@ function Settings() {
 
             <div className="form-group">
               <label className="form-label">Wallet Address</label>
-              <div className="wallet-display">{connected && address ? address : 'Not Connected'}</div>
+              <div className="wallet-display">{formatAddress(address)}</div>
               {connected && (
                 <button 
                   type="button" 

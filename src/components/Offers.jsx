@@ -111,9 +111,9 @@ function Offers({ chainThemes, onNavigate }) {
     const order = orders.find(o => o.orderId === orderId);
     if (!order) return;
     
-    // Verify the user owns this order
+    // Verify the user owns this order (defensive check - button should be hidden for non-owned orders)
     if (!isUserOrder(order)) {
-      alert('You can only cancel orders created with your connected wallet.');
+      console.error('Attempted to cancel an order not owned by the connected wallet');
       return;
     }
     

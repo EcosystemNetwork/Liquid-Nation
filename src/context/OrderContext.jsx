@@ -23,9 +23,13 @@ export const OrderProvider = ({ children }) => {
     }, 0);
     
     // Use wallet address as the display name (shortened version)
-    const displayName = orderData.btcWallet 
-      ? `${orderData.btcWallet.slice(0, 6)}...${orderData.btcWallet.slice(-5)}`
-      : '0xAB5....39c81';
+    // Prefer BTC wallet, fallback to EVM wallet, then to unknown
+    let displayName = 'Unknown Wallet';
+    if (orderData.btcWallet) {
+      displayName = `${orderData.btcWallet.slice(0, 6)}...${orderData.btcWallet.slice(-5)}`;
+    } else if (orderData.evmWallet) {
+      displayName = `${orderData.evmWallet.slice(0, 6)}...${orderData.evmWallet.slice(-4)}`;
+    }
     
     const newOrder = {
       ...orderData,

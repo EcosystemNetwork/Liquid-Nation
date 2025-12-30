@@ -1,124 +1,208 @@
 # Liquid Nation
 
-A decentralized P2P cross-chain exchange protocol for seamless asset trading.
+A decentralized P2P cross-chain exchange protocol powered by [Charms](https://charms.dev) for seamless, trustless asset trading on Bitcoin.
 
 ## Overview
 
-Liquid Nation is a modern DeFi protocol built with React that enables users to trade digital assets directly with each other across multiple blockchains. Built on blockchain technology, it provides a secure, transparent, and efficient platform for peer-to-peer cross-chain exchanges.
+Liquid Nation enables secure, peer-to-peer asset swaps across multiple blockchains using the Charms protocol. Our technology eliminates the need for liquidity pools, reducing gas fees and providing a safer, more efficient, and trustless experience for users.
 
-## Features
+**Key Differentiators:**
+- 🔐 **No Liquidity Pools** - Direct P2P atomic swaps via Bitcoin UTXOs
+- ⚡ **Zero-Knowledge Proofs** - Cryptographic verification, not trust
+- 🌐 **True Cross-Chain** - Native Bitcoin + Cardano support
+- 💰 **Lower Fees** - No bridge fees, proof batching reduces costs
 
-- **Instant Swaps**: Execute cross-chain trades in seconds with our streamlined exchange protocol
-- **Multi-Chain Support**: Trade assets across multiple blockchain networks seamlessly
-- **Decentralized**: Non-custodial protocol with full user control over assets
-- **Fair Market Prices**: Competitive rates driven by real-time market dynamics
-- **Secure Smart Contracts**: Audited by leading security firms for maximum protection
-- **Protected Trades**: Escrow mechanism to protect both parties in every transaction
+## Architecture
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn
-- WalletConnect Project ID (get from https://cloud.walletconnect.com/)
-
-### Installation
-
-```bash
-# Install dependencies
-npm install
-
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env and add your WalletConnect Project ID
-# VITE_WALLETCONNECT_PROJECT_ID=your_project_id_here
 ```
-
-### Development
-
-```bash
-# Run the development server
-npm run dev
-```
-
-The application will be available at `http://localhost:5173/`
-
-### Build
-
-```bash
-# Build for production
-npm run build
-```
-
-The built files will be in the `dist` directory.
-
-### Preview Production Build
-
-```bash
-# Preview the production build locally
-npm run preview
+┌─────────────────────────────────────────────────────────────────┐
+│                     LIQUID NATION ARCHITECTURE                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Frontend (React)  ◄───────►  Backend (Rust/Axum)               │
+│       │                              │                           │
+│       ▼                              ▼                           │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                 CHARMS PROTOCOL LAYER                    │    │
+│  │  ┌───────────────┐  ┌────────────────────────────────┐  │    │
+│  │  │ Swap App      │  │ Spells (Transaction Templates) │  │    │
+│  │  │ (Rust)        │  │ • create-order.yaml            │  │    │
+│  │  └───────────────┘  │ • fill-order.yaml              │  │    │
+│  │                      │ • cancel-order.yaml            │  │    │
+│  │                      └────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│              ┌───────────────┼───────────────┐                  │
+│              ▼               ▼               ▼                  │
+│         Bitcoin         Cardano        Future Chains            │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Project Structure
 
 ```
-.
-├── public/             # Static assets
-│   └── favicon.svg     # Site favicon
-├── src/
-│   ├── components/     # React components
-│   │   ├── Navbar.jsx
-│   │   ├── Hero.jsx
-│   │   ├── Features.jsx
-│   │   ├── HowItWorks.jsx
-│   │   ├── Stats.jsx
-│   │   ├── CTA.jsx
-│   │   └── Footer.jsx
-│   ├── App.jsx         # Main app component
-│   ├── main.jsx        # Entry point
-│   └── index.css       # Global styles
-├── index.html          # HTML template
-├── package.json        # Dependencies and scripts
-└── vite.config.js      # Vite configuration
+Liquid-Nation/
+├── apps/                          # Charms Rust apps
+│   └── swap-app/
+│       ├── Cargo.toml
+│       ├── src/
+│       │   ├── lib.rs            # Swap contract logic
+│       │   └── main.rs           # Entry point
+│       └── spells/               # Transaction templates
+│           ├── create-order.yaml
+│           ├── fill-order.yaml
+│           ├── cancel-order.yaml
+│           └── partial-fill.yaml
+├── backend/                       # Rust API server
+│   ├── Cargo.toml
+│   └── src/
+│       ├── main.rs
+│       ├── routes/               # API endpoints
+│       │   ├── orders.rs
+│       │   ├── wallet.rs
+│       │   └── spells.rs
+│       └── services/             # Business logic
+│           ├── bitcoin.rs
+│           └── charms.rs
+├── src/                          # React frontend
+│   ├── components/
+│   ├── services/
+│   │   └── api.js               # Backend API client
+│   └── App.jsx
+├── Cargo.toml                    # Rust workspace
+└── package.json                  # Node.js dependencies
+```
+
+## Prerequisites
+
+- **Node.js** v18 or higher
+- **Rust** (latest stable)
+- **Bitcoin Core** v30.0.0+
+- **Charms CLI** v0.10.0
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+# Install Charms CLI
+cargo install --locked charms
+
+# Install Node.js dependencies
+npm install
+
+# Build Rust backend and apps
+cargo build --release
+```
+
+### 2. Configure Bitcoin Core
+
+Create `~/Library/Application Support/Bitcoin/bitcoin.conf`:
+
+```ini
+testnet4=1
+server=1
+rpcuser=charms
+rpcpassword=charms
+```
+
+Start Bitcoin Core:
+```bash
+bitcoind -daemon
+```
+
+### 3. Run the Application
+
+```bash
+# Terminal 1: Start the backend
+cd backend
+cargo run --release
+
+# Terminal 2: Start the frontend
+npm run dev
+```
+
+The application will be available at:
+- Frontend: `http://localhost:5173/`
+- Backend API: `http://localhost:3001/api`
+
+## API Endpoints
+
+### Orders
+- `GET /api/orders` - List all orders
+- `POST /api/orders` - Create new order
+- `GET /api/orders/:id` - Get order details
+- `POST /api/orders/:id/fill` - Fill an order
+- `DELETE /api/orders/:id/cancel` - Cancel an order
+- `POST /api/orders/:id/partial-fill` - Partially fill an order
+
+### Wallet
+- `POST /api/wallet/connect` - Connect wallet
+- `GET /api/wallet/balance` - Get balance
+- `GET /api/wallet/utxos` - Get UTXOs
+- `GET /api/wallet/address` - Get new address
+
+### Spells
+- `POST /api/spells/prove` - Prove a spell
+- `POST /api/spells/broadcast` - Broadcast transactions
+- `GET /api/spells/status/:txid` - Get transaction status
+
+## Building the Swap App
+
+```bash
+# Build the Charms app
+cd apps/swap-app
+cargo build --release
+
+# Get the verification key
+app_bin=$(charms app build)
+charms app vk "$app_bin"
 ```
 
 ## Technology Stack
 
+### Backend
+- **Rust** - Systems programming language
+- **Axum** - Web framework
+- **Charms SDK** - Bitcoin programmable assets
+- **SQLite** - Database
+
+### Frontend
 - **React** 19.2.0 - UI library
-- **Vite** 7.2.4 - Build tool and dev server
-- **LaserEyes React** 0.0.79 - Bitcoin wallet integration
-- **WalletConnect + Wagmi** - EVM wallet integration
-- **CSS3** - Styling (with CSS Variables and Grid/Flexbox)
-- **SVG Graphics** - Icons and logos
+- **Vite** 7.2.4 - Build tool
+- **CSS3** - Styling
 
-## Wallet Integration
+### Blockchain
+- **Bitcoin** - Base layer
+- **Charms Protocol** - Programmable assets
+- **Cardano** - Cross-chain support (coming soon)
 
-Liquid Nation uses a dual wallet system to support cross-chain trading:
+## Development
 
-- **Bitcoin Wallet**: Primary authentication using LaserEyes (supports Unisat, Leather, Magic Eden, OKX, Xverse, Wizz, Phantom, OYL)
-- **EVM Wallet**: For cross-chain orders using WalletConnect (supports MetaMask, Coinbase Wallet, WalletConnect, and more)
+### Run Tests
 
-See [WALLETCONNECT_SETUP.md](./WALLETCONNECT_SETUP.md) for detailed setup instructions.
+```bash
+# Rust tests
+cargo test
 
-## Features Implemented
+# Frontend tests
+npm test
+```
 
-- Responsive design for mobile, tablet, and desktop
-- Smooth scrolling navigation
-- Interactive feature cards
-- Modern gradient design system
-- Mobile-friendly navigation menu with toggle
-- Component-based architecture
-- Dual wallet system (Bitcoin + EVM)
-- Cross-chain order management
+### Build for Production
 
-## Browser Support
+```bash
+# Build Rust
+cargo build --release
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+# Build frontend
+npm run build
+```
+
+## Resources
+
+- [Charms Documentation](https://docs.charms.dev)
+- [Bitcoin Testnet4 Faucet](https://mempool.space/testnet4/faucet)
+- [Charms GitHub](https://github.com/charms)
 
 ## License
 

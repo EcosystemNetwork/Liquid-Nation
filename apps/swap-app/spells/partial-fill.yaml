@@ -1,0 +1,85 @@
+# Partial Fill Order Spell
+# Partially fills an order, updating the remaining amount
+#
+# Variables:
+#   - app_id: Swap app identity
+#   - app_vk: Swap app verification key
+#   - offer_token_id: Token being offered
+#   - offer_token_vk: Offer token verification key
+#   - want_token_id: Token wanted (provided by taker)
+#   - want_token_vk: Want token verification key
+#   - order_utxo: UTXO containing the order
+#   - taker_utxo: Taker's UTXO with tokens
+#   - addr_escrow: Escrow address for remaining order
+#   - addr_maker: Maker's destination for partial payment
+#   - addr_taker: Taker's destination for partial tokens
+#   - fill_amount: Amount to fill
+#   - fill_want_amount: Proportional want amount
+
+version: 8
+
+apps:
+  $ORDER: n/${app_id}/${app_vk}
+  $OFFER: t/${offer_token_id}/${offer_token_vk}
+  $WANT: t/${want_token_id}/${want_token_vk}
+
+public_inputs:
+  $ORDER: "partial_fill"
+
+private_inputs:
+  $ORDER:
+    taker_pubkey: ${taker_pubkey}
+    fill_amount: ${fill_amount}
+    taker_dest_address: ${addr_taker}
+
+ins:
+  # Order with locked tokens
+  - utxo_id: ${order_utxo}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey}
+        offer_app_id: ${offer_token_id}
+        offer_amount: ${offer_amount}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount}
+        dest_chain: ${dest_chain}
+        dest_address: ${dest_address}
+        expiry_height: ${expiry_height}
+        allow_partial: true
+        status: 0
+        filled_amount: ${current_filled}
+      $OFFER: ${current_remaining}
+  
+  # Taker's tokens
+  - utxo_id: ${taker_utxo}
+    charms:
+      $WANT: ${fill_want_amount}
+
+outs:
+  # Updated order with remaining tokens
+  - address: ${addr_escrow}
+    charms:
+      $ORDER:
+        maker_pubkey: ${maker_pubkey}
+        offer_app_id: ${offer_token_id}
+        offer_amount: ${offer_amount}
+        want_app_id: ${want_token_id}
+        want_amount: ${want_amount}
+        dest_chain: ${dest_chain}
+        dest_address: ${dest_address}
+        expiry_height: ${expiry_height}
+        allow_partial: true
+        status: ${new_status}
+        filled_amount: ${new_filled}
+      $OFFER: ${new_remaining}
+  
+  # Maker receives proportional want tokens
+  - address: ${addr_maker}
+    charms:
+      $WANT: ${fill_want_amount}
+  
+  # Taker receives proportional offer tokens
+  - address: ${addr_taker}
+    charms:
+      $OFFER: ${fill_amount}
+

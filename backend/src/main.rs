@@ -1,0 +1,84 @@
+//! Liquid Nation Backend API Server
+//! 
+//! This server provides REST API endpoints for:
+//! - Order management (create, list, fill, cancel)
+//! - Wallet operations
+//! - Charms protocol integration
+
+mod routes;
+mod services;
+
+use axum::{
+    Router,
+    routing::{get, post, delete},
+};
+use tower_http::cors::{CorsLayer, Any};
+use tower_http::trace::TraceLayer;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use std::net::SocketAddr;
+
+use routes::{health, orders, wallet, spells};
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    // Load environment variables
+    dotenv::dotenv().ok();
+
+    // Initialize tracing
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::EnvFilter::from_default_env()
+            .add_directive("liquid_nation_backend=debug".parse()?))
+        .init();
+
+    tracing::info!("Starting Liquid Nation API Server");
+
+    // Build application routes
+    let app = Router::new()
+        // Health check
+        .route("/health", get(health::health_check))
+        .route("/api/health", get(health::health_check))
+        
+        // Orders
+        .route("/api/orders", get(orders::list_orders))
+        .route("/api/orders", post(orders::create_order))
+        .route("/api/orders/:id", get(orders::get_order))
+        .route("/api/orders/:id/fill", post(orders::fill_order))
+        .route("/api/orders/:id/cancel", delete(orders::cancel_order))
+        .route("/api/orders/:id/partial-fill", post(orders::partial_fill_order))
+        
+        // Wallet
+        .route("/api/wallet/connect", post(wallet::connect_wallet))
+        .route("/api/wallet/balance", get(wallet::get_balance))
+        .route("/api/wallet/utxos", get(wallet::get_utxos))
+        .route("/api/wallet/address", get(wallet::get_address))
+        
+        // Spells (Charms protocol)
+        .route("/api/spells/prove", post(spells::prove_spell))
+        .route("/api/spells/broadcast", post(spells::broadcast_transaction))
+        .route("/api/spells/status/:txid", get(spells::get_transaction_status))
+        
+        // CORS
+        .layer(CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any))
+        
+        // Tracing
+        .layer(TraceLayer::new_for_http());
+
+    // Get port from environment or default
+    let port: u16 = std::env::var("PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(3001);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    tracing::info!("Listening on {}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}
+

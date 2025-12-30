@@ -113,7 +113,7 @@ function Offers({ chainThemes, onNavigate }) {
     
     // Verify the user owns this order (defensive check - button should be hidden for non-owned orders)
     if (!isUserOrder(order)) {
-      console.error('Attempted to cancel an order not owned by the connected wallet');
+      console.error(`Unauthorized cancellation attempt for order ${orderId}. Order wallets: BTC=${order.btcWallet}, EVM=${order.evmWallet}. Connected wallets: BTC=${btcAddress}, EVM=${evmAddress}`);
       return;
     }
     

@@ -12,6 +12,9 @@ import {
   OYL
 } from '@omnisat/lasereyes-react';
 
+// Delay before showing EVM prompt after BTC connection (in milliseconds)
+const EVM_PROMPT_DELAY = 500;
+
 function WalletConnect({ onClose }) {
   const { connect: connectBTC, connected: btcConnected } = useWallet();
   const { connect: connectEVM, connectors, connected: evmConnected } = useEVMWallet();
@@ -25,7 +28,7 @@ function WalletConnect({ onClose }) {
       const timer = setTimeout(() => {
         setShowEVMPrompt(true);
         setWalletType('evm');
-      }, 500);
+      }, EVM_PROMPT_DELAY);
       return () => clearTimeout(timer);
     }
   }, [btcConnected, evmConnected, showEVMPrompt]);

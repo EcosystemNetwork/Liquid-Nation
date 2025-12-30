@@ -77,19 +77,36 @@ export const OrderProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      // Helper to map chain names to API format (backend only supports "bitcoin" and "cardano")
+      const mapChainToApi = (chain) => {
+        if (!chain) return 'bitcoin';
+        const normalized = chain.toLowerCase();
+        if (normalized === 'btc' || normalized === 'bitcoin') return 'bitcoin';
+        if (normalized === 'ada' || normalized === 'cardano') return 'cardano';
+        // For EVM chains, we'll use bitcoin as source for now (cross-chain via beam)
+        return 'bitcoin';
+      };
+
+      // Parse amount and token from asset string (e.g., "0.5 BTC")
+      const assetParts = orderData.asset?.split(' ') || [];
+      const offerAmount = assetParts[0] || '0';
+      const offerToken = assetParts[1] || 'BTC';
+
       // Map UI order data to API format
       const apiOrderData = {
-        makerAddress: orderData.btcWallet || orderData.evmWallet,
-        offerToken: orderData.asset?.split(' ')[1] || 'BTC',
-        offerAmount: orderData.asset?.split(' ')[0] || '0',
-        wantToken: orderData.accepts?.[0] || 'ETH',
-        wantAmount: '100', // TODO: Calculate from premium
-        sourceChain: orderData.chain === 'BTC' ? 'bitcoin' : orderData.chain.toLowerCase(),
-        destChain: orderData.chain === 'BTC' ? 'bitcoin' : orderData.chain.toLowerCase(),
+        makerAddress: orderData.btcWallet || orderData.evmWallet || '',
+        offerToken: offerToken,
+        offerAmount: offerAmount,
+        wantToken: orderData.accepts?.[0] || 'USDC',
+        wantAmount: offerAmount, // Default to 1:1, adjust with premium
+        sourceChain: mapChainToApi(orderData.chain),
+        destChain: mapChainToApi(orderData.accepts?.[0]),
         allowPartial: orderData.partial !== false,
         expiryBlocks: 144, // ~1 day on Bitcoin
-        fundingUtxo: '', // TODO: Get from wallet
+        fundingUtxo: 'pending', // Placeholder - will be set when signing
       };
+
+      console.log('Creating order with data:', apiOrderData);
 
       const response = await api.createOrder(apiOrderData);
       

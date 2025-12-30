@@ -18,12 +18,19 @@ pub enum OrderStatus {
     PartiallyFilled,
 }
 
-/// Chain identifier
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Chain {
-    Bitcoin,
-    Cardano,
+/// Chain identifier - using String for flexibility during development
+pub type Chain = String;
+
+/// Helper function to normalize chain names
+pub fn normalize_chain(chain: &str) -> String {
+    match chain.to_lowercase().as_str() {
+        "btc" | "bitcoin" => "bitcoin".to_string(),
+        "ada" | "cardano" => "cardano".to_string(),
+        "eth" | "ethereum" => "ethereum".to_string(),
+        "base" => "base".to_string(),
+        "arbitrum" | "arb" => "arbitrum".to_string(),
+        other => other.to_lowercase(),
+    }
 }
 
 /// Order representation
@@ -129,8 +136,8 @@ pub async fn list_orders(
             offer_amount: "1000".to_string(),
             want_token: "BTC".to_string(),
             want_amount: "10000".to_string(),
-            source_chain: Chain::Bitcoin,
-            dest_chain: Chain::Bitcoin,
+            source_chain: "bitcoin".to_string(),
+            dest_chain: "bitcoin".to_string(),
             status: OrderStatus::Open,
             allow_partial: true,
             filled_amount: "0".to_string(),
@@ -159,8 +166,8 @@ pub async fn get_order(Path(id): Path<String>) -> Json<Option<Order>> {
         offer_amount: "1000".to_string(),
         want_token: "BTC".to_string(),
         want_amount: "10000".to_string(),
-        source_chain: Chain::Bitcoin,
-        dest_chain: Chain::Bitcoin,
+        source_chain: "bitcoin".to_string(),
+        dest_chain: "bitcoin".to_string(),
         status: OrderStatus::Open,
         allow_partial: true,
         filled_amount: "0".to_string(),
@@ -226,8 +233,8 @@ pub async fn fill_order(
         offer_amount: "1000".to_string(),
         want_token: "BTC".to_string(),
         want_amount: "10000".to_string(),
-        source_chain: Chain::Bitcoin,
-        dest_chain: Chain::Bitcoin,
+        source_chain: "bitcoin".to_string(),
+        dest_chain: "bitcoin".to_string(),
         status: OrderStatus::Filled,
         allow_partial: true,
         filled_amount: "1000".to_string(),
@@ -261,8 +268,8 @@ pub async fn cancel_order(Path(id): Path<String>) -> Json<Order> {
         offer_amount: "1000".to_string(),
         want_token: "BTC".to_string(),
         want_amount: "10000".to_string(),
-        source_chain: Chain::Bitcoin,
-        dest_chain: Chain::Bitcoin,
+        source_chain: "bitcoin".to_string(),
+        dest_chain: "bitcoin".to_string(),
         status: OrderStatus::Cancelled,
         allow_partial: true,
         filled_amount: "0".to_string(),
@@ -287,8 +294,8 @@ pub async fn partial_fill_order(
         offer_amount: "1000".to_string(),
         want_token: "BTC".to_string(),
         want_amount: "10000".to_string(),
-        source_chain: Chain::Bitcoin,
-        dest_chain: Chain::Bitcoin,
+        source_chain: "bitcoin".to_string(),
+        dest_chain: "bitcoin".to_string(),
         status: OrderStatus::PartiallyFilled,
         allow_partial: true,
         filled_amount: fill_amount,

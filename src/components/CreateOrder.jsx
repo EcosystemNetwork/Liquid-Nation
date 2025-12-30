@@ -17,6 +17,14 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const [premium, setPremium] = useState('');
   const [submitError, setSubmitError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Manual wallet address inputs for testnet
+  const [manualBtcAddress, setManualBtcAddress] = useState('');
+  const [manualEvmAddress, setManualEvmAddress] = useState('');
+  
+  // Use manual address if provided, otherwise use connected wallet
+  const effectiveBtcAddress = manualBtcAddress || btcAddress;
+  const effectiveEvmAddress = manualEvmAddress || evmAddress;
 
   const chains = Object.keys(chainThemes);
   const availableAssets = chains; // Use the same chains/tokens as available assets
@@ -33,9 +41,9 @@ function CreateOrder({ chainThemes, onNavigate }) {
     e.preventDefault();
     setSubmitError(null);
     
-    // Validate wallet connection
-    if (!btcConnected && !evmConnected) {
-      setSubmitError('Please connect a wallet to create an order');
+    // Validate wallet - either connected or manual address required
+    if (!effectiveBtcAddress && !effectiveEvmAddress) {
+      setSubmitError('Please connect a wallet or enter a testnet address');
       return;
     }
 
@@ -61,8 +69,8 @@ function CreateOrder({ chainThemes, onNavigate }) {
         accepts: acceptedTokens,
         partial: partialFills,
         premium: `${premium}%`,
-        btcWallet: btcAddress,
-        evmWallet: evmAddress,
+        btcWallet: effectiveBtcAddress,
+        evmWallet: effectiveEvmAddress,
       };
       
       await createOrder(newOrder);
@@ -75,6 +83,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
       setAcceptedTokens([]);
       setPartialFills(true);
       setPremium('');
+      // Keep wallet addresses for convenience
       
       // Navigate back to dashboard to see the newly created order
       if (onNavigate) {
@@ -197,38 +206,53 @@ function CreateOrder({ chainThemes, onNavigate }) {
             <label className="form-label">Wallet Selection</label>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label" htmlFor="btcWallet">Bitcoin Wallet</label>
-                {btcConnected ? (
-                  <div className="wallet-display" style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.9em', padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                    {btcAddress}
-                  </div>
-                ) : (
-                  <>
-                    <div className="wallet-display" style={{ padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-subtle)' }}>
-                      No Bitcoin wallet connected
-                    </div>
-                    <p className="form-help" style={{ color: 'orange', marginTop: '8px' }}>
-                      Please connect a Bitcoin wallet to create orders
-                    </p>
-                  </>
+                <label className="form-label" htmlFor="btcWallet">Bitcoin Testnet Address</label>
+                <input
+                  type="text"
+                  id="btcWallet"
+                  className="form-input"
+                  value={manualBtcAddress}
+                  onChange={(e) => setManualBtcAddress(e.target.value)}
+                  placeholder="tb1p... or tb1q... (testnet4 address)"
+                  style={{ fontFamily: 'monospace', fontSize: '0.9em' }}
+                />
+                {btcConnected && !manualBtcAddress && (
+                  <p className="form-help" style={{ color: '#4a9', marginTop: '8px' }}>
+                    ✓ Connected wallet: {btcAddress?.slice(0, 12)}...{btcAddress?.slice(-6)}
+                  </p>
+                )}
+                {!btcConnected && !manualBtcAddress && (
+                  <p className="form-help" style={{ color: 'var(--text-subtle)', marginTop: '8px' }}>
+                    Enter your testnet4 Bitcoin address or connect a wallet
+                  </p>
+                )}
+                {manualBtcAddress && (
+                  <p className="form-help" style={{ color: '#4a9', marginTop: '8px' }}>
+                    ✓ Using manual address
+                  </p>
                 )}
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="evmWallet">EVM Wallet</label>
-                {evmConnected ? (
-                  <div className="wallet-display" style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.9em', padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                    {evmAddress}
-                  </div>
-                ) : (
-                  <>
-                    <div className="wallet-display" style={{ padding: '12px', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-subtle)' }}>
-                      No EVM wallet connected
-                    </div>
-                    <p className="form-help" style={{ color: 'orange', marginTop: '8px' }}>
-                      Connect an EVM wallet for cross-chain orders
-                    </p>
-                  </>
+                <label className="form-label" htmlFor="evmWallet">EVM Address (Optional)</label>
+                <input
+                  type="text"
+                  id="evmWallet"
+                  className="form-input"
+                  value={manualEvmAddress}
+                  onChange={(e) => setManualEvmAddress(e.target.value)}
+                  placeholder="0x... (for cross-chain orders)"
+                  style={{ fontFamily: 'monospace', fontSize: '0.9em' }}
+                />
+                {evmConnected && !manualEvmAddress && (
+                  <p className="form-help" style={{ color: '#4a9', marginTop: '8px' }}>
+                    ✓ Connected wallet: {evmAddress?.slice(0, 8)}...{evmAddress?.slice(-6)}
+                  </p>
+                )}
+                {!evmConnected && !manualEvmAddress && (
+                  <p className="form-help" style={{ color: 'var(--text-subtle)', marginTop: '8px' }}>
+                    Optional: For cross-chain swaps
+                  </p>
                 )}
               </div>
             </div>
@@ -286,7 +310,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
             <button 
               type="submit" 
               className="btn-submit"
-              disabled={isSubmitting || loading || (!btcConnected && !evmConnected)}
+              disabled={isSubmitting || loading || (!effectiveBtcAddress && !effectiveEvmAddress)}
             >
               {isSubmitting || loading ? 'Creating...' : 'Create Order'}
             </button>

@@ -34,7 +34,7 @@ function StatusCell({ percent }) {
 }
 
 function Dashboard({ chainThemes, onNavigate }) {
-  const { orders, deleteOrder } = useOrders();
+  const { orders, deleteOrder, cancelAllOrders } = useOrders();
   
   // Filter for user's orders (orders created by the current user)
   // For demo purposes, we identify user orders by the placeholder name used in OrderContext
@@ -100,18 +100,39 @@ function Dashboard({ chainThemes, onNavigate }) {
     }
   };
 
+  const handleCancelAllOrders = () => {
+    if (userOrders.length === 0) return;
+    
+    if (window.confirm(`Are you sure you want to cancel all ${userOrders.length} order${userOrders.length > 1 ? 's' : ''}?`)) {
+      cancelAllOrders('0xAB5....39c81');
+      setCurrentPage(1); // Reset to first page
+    }
+  };
+
   return (
     <section className="offers-panel" aria-label="Your orders">
       <div className="panel-header">
         <h1>My Orders</h1>
-        <button
-          type="button"
-          className="btn-create-order"
-          onClick={() => onNavigate('create')}
-          aria-label="Create new order"
-        >
-          Create Order
-        </button>
+        <div className="header-actions">
+          {userOrders.length > 0 && (
+            <button
+              type="button"
+              className="btn-cancel-all-orders"
+              onClick={handleCancelAllOrders}
+              aria-label="Cancel all orders"
+            >
+              Cancel All
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn-create-order"
+            onClick={() => onNavigate('create')}
+            aria-label="Create new order"
+          >
+            Create Order
+          </button>
+        </div>
       </div>
 
       {userOrders.length === 0 ? (

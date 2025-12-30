@@ -39,10 +39,15 @@ export const OrderProvider = ({ children }) => {
     setOrders(prevOrders => prevOrders.filter(order => order.orderId !== orderId));
   };
 
+  const cancelAllOrders = (userName) => {
+    setOrders(prevOrders => prevOrders.filter(order => order.name !== userName));
+  };
+
   const value = {
     orders,
     createOrder,
     deleteOrder,
+    cancelAllOrders,
   };
 
   return (

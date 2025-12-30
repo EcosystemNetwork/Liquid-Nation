@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useOrders } from '../context/OrderContext';
+import { useWallet } from '../context/WalletContext';
+import { useEVMWallet } from '../context/EVMWalletContext';
 
 function Avatar({ symbol, color }) {
   return (

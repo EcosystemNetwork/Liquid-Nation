@@ -22,11 +22,20 @@ export const OrderProvider = ({ children }) => {
       return !isNaN(id) && id > max ? id : max;
     }, 0);
     
+    // Use wallet address as the display name (shortened version)
+    // Prefer BTC wallet, fallback to EVM wallet, then to unknown
+    let displayName = 'Unknown Wallet';
+    if (orderData.btcWallet) {
+      displayName = `${orderData.btcWallet.slice(0, 6)}...${orderData.btcWallet.slice(-4)}`;
+    } else if (orderData.evmWallet) {
+      displayName = `${orderData.evmWallet.slice(0, 6)}...${orderData.evmWallet.slice(-4)}`;
+    }
+    
     const newOrder = {
       ...orderData,
       orderId: `#${maxId + 1}`,
       status: 0, // New orders start at 0% filled
-      name: '0xAB5....39c81', // Placeholder for current user
+      name: displayName,
       avatar: '🛡️',
       avatarColor: '#ffe7d9',
     };

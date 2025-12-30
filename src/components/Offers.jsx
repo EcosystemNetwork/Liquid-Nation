@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useOrders } from '../context/OrderContext';
+import { useWallet } from '../context/WalletContext';
+import { useEVMWallet } from '../context/EVMWalletContext';
 
 function Avatar({ symbol, color }) {
   return (
@@ -35,6 +37,8 @@ function StatusCell({ percent }) {
 
 function Offers({ chainThemes, onNavigate }) {
   const { orders, deleteOrder } = useOrders();
+  const { address: btcAddress } = useWallet();
+  const { address: evmAddress } = useEVMWallet();
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -95,7 +99,24 @@ function Offers({ chainThemes, onNavigate }) {
     onNavigate('create');
   };
 
+  // Check if an order belongs to the currently connected wallet
+  const isUserOrder = (order) => {
+    if (!btcAddress && !evmAddress) return false;
+    return (btcAddress && order.btcWallet === btcAddress) || 
+           (evmAddress && order.evmWallet === evmAddress);
+  };
+
   const handleDeleteOrder = (orderId) => {
+    // Find the order to check ownership
+    const order = orders.find(o => o.orderId === orderId);
+    if (!order) return;
+    
+    // Verify the user owns this order (defensive check - button should be hidden for non-owned orders)
+    if (!isUserOrder(order)) {
+      console.error(`Unauthorized cancellation attempt for order ${orderId}. Order wallets: BTC=${order.btcWallet}, EVM=${order.evmWallet}. Connected wallets: BTC=${btcAddress}, EVM=${evmAddress}`);
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to cancel this order?')) {
       deleteOrder(orderId);
     }
@@ -158,14 +179,18 @@ function Offers({ chainThemes, onNavigate }) {
             </div>
             <div className="table-cell text-strong">{offer.premium}</div>
             <div className="table-cell">
-              <button
-                type="button"
-                className="btn-delete-order"
-                onClick={() => handleDeleteOrder(offer.orderId)}
-                aria-label="Cancel order"
-              >
-                Cancel
-              </button>
+              {isUserOrder(offer) ? (
+                <button
+                  type="button"
+                  className="btn-delete-order"
+                  onClick={() => handleDeleteOrder(offer.orderId)}
+                  aria-label="Cancel order"
+                >
+                  Cancel
+                </button>
+              ) : (
+                <span style={{ color: 'var(--text-subtle)', fontSize: '0.9em' }}>—</span>
+              )}
             </div>
           </div>
         ))}

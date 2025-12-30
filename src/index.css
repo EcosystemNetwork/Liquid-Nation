@@ -465,12 +465,12 @@ body {
 
 .icon-button {
   border: 1px solid var(--border);
-  background: #fdfaf4;
+  background: var(--panel);
   padding: 8px 12px;
   border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
-  color: var(--nav-bg);
+  color: var(--text-strong);
   box-shadow: 0 6px 14px rgba(7, 83, 114, 0.12);
 }
 
@@ -488,7 +488,7 @@ body {
 
 .dropdown button {
   border: 1px solid var(--border);
-  background: #fdfaf4;
+  background: var(--panel);
   padding: 8px 12px;
   border-radius: 10px;
   min-width: 88px;
@@ -501,7 +501,7 @@ body {
 }
 
 .dropdown button:hover {
-  background: #f5f0e8;
+  background: var(--border);
 }
 
 .dropdown-menu {
@@ -509,7 +509,7 @@ body {
   bottom: 100%;
   left: 0;
   right: 0;
-  background: #fdfaf4;
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 6px 14px rgba(7, 83, 114, 0.12);
@@ -533,11 +533,11 @@ body {
 }
 
 .dropdown-menu button:hover {
-  background: #f5f0e8;
+  background: var(--border);
 }
 
 .dropdown-menu button.active {
-  background: #e8dcc8;
+  background: var(--border);
   font-weight: 700;
 }
 
@@ -547,27 +547,29 @@ body {
 
 .page-window {
   border: 1px solid var(--border);
-  background: #fdfaf4;
+  background: var(--panel);
   padding: 8px 12px;
   border-radius: 10px;
   min-width: 88px;
   text-align: center;
   box-shadow: 0 6px 14px rgba(7, 83, 114, 0.12);
+  color: var(--text-strong);
 }
 
 .pager-arrows button {
   border: 1px solid var(--border);
-  background: #fdfaf4;
+  background: var(--panel);
   padding: 8px 10px;
   border-radius: 10px;
   cursor: pointer;
   margin-left: 6px;
   font-size: 16px;
   box-shadow: 0 6px 14px rgba(7, 83, 114, 0.12);
+  color: var(--text-strong);
 }
 
 .pager-arrows button:hover:not(:disabled) {
-  background: #f5f0e8;
+  background: var(--border);
 }
 
 .pager-arrows button:disabled {
@@ -1316,7 +1318,7 @@ body {
   flex: 1;
   padding: 14px 20px;
   border: 2px solid var(--border);
-  background: #fdfaf4;
+  background: var(--panel);
   color: var(--text-strong);
   border-radius: 10px;
   font-weight: 700;

@@ -1343,7 +1343,7 @@ body {
 /* Swap Styles */
 .swap-panel {
   width: 100%;
-  max-width: 550px;
+  max-width: 480px;
   margin: 0 auto;
   background: var(--panel);
   border-radius: 18px;
@@ -1452,7 +1452,7 @@ body {
 }
 
 .swap-container {
-  padding: 24px;
+  padding: 20px;
 }
 
 .swap-token-selector {
@@ -1577,31 +1577,10 @@ body {
 
 .swap-action-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin: 16px 0;
   position: relative;
-}
-
-.swap-max-button {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: absolute;
-  left: 16px;
-  top: -60px;
-  z-index: 10;
-}
-
-.swap-max-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(29, 211, 215, 0.3);
 }
 
 .swap-direction-button {

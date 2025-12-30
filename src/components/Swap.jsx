@@ -121,10 +121,7 @@ function Swap({ chainThemes }) {
     alert(`Swapping ${fromAmount} ${fromToken} for ${toAmount} ${toToken}`);
   };
 
-  const handleMaxClick = () => {
-    // Mock max balance
-    setFromAmount('0.00');
-  };
+
 
   return (
     <section className="swap-panel" aria-label="Token Swap">
@@ -179,13 +176,6 @@ function Swap({ chainThemes }) {
         />
         
         <div className="swap-action-row">
-          <button
-            type="button"
-            className="swap-max-button"
-            onClick={handleMaxClick}
-          >
-            MAX
-          </button>
           <button
             type="button"
             className="swap-direction-button"

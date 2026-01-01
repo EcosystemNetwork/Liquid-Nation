@@ -1,5 +1,11 @@
 /* Transaction History Styles - Matching Main Design */
 
+/* Transaction History Section - Separate from My Orders */
+.tx-history-section {
+  margin-top: 24px;
+  padding: 0 20px;
+}
+
 /* Toggle Button */
 .tx-history-toggle {
   margin-top: 24px;

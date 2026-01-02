@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useOrders } from '../context/OrderContext';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
+import TransactionHistory from './TransactionHistory';
 
 function Avatar({ symbol, color }) {
   return (
@@ -41,17 +42,22 @@ function Dashboard({ chainThemes, onNavigate }) {
   const { address: evmAddress } = useEVMWallet();
   
   // Filter for user's orders (orders created by the current user)
-  // Match by wallet address
+  // If wallet connected, show only user's orders. Otherwise show all orders.
   const userOrders = orders.filter(order => {
-    if (!btcAddress && !evmAddress) return false;
+    // If no wallet connected, show all orders
+    if (!btcAddress && !evmAddress) return true;
+    // If wallet connected, filter by address
     return (btcAddress && order.btcWallet === btcAddress) || 
-           (evmAddress && order.evmWallet === evmAddress);
+           (evmAddress && order.evmWallet === evmAddress) ||
+           (btcAddress && order.makerAddress === btcAddress) ||
+           (evmAddress && order.makerAddress === evmAddress);
   });
   
   // Pagination state
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showTxHistory, setShowTxHistory] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -132,6 +138,7 @@ function Dashboard({ chainThemes, onNavigate }) {
   };
 
   return (
+    <>
     <section className="offers-panel" aria-label="Your orders">
       <div className="panel-header">
         <h1>My Orders</h1>
@@ -275,7 +282,27 @@ function Dashboard({ chainThemes, onNavigate }) {
           </div>
         </>
       )}
+      
     </section>
+
+      {/* Transaction History Section - Below My Orders */}
+      <section className="tx-history-section">
+        <div className="tx-history-toggle">
+          <button 
+            type="button"
+            className={`btn-tx-history ${showTxHistory ? 'active' : ''}`}
+            onClick={() => setShowTxHistory(!showTxHistory)}
+          >
+            <span className="btn-icon">📜</span>
+            <span>Transaction History</span>
+            <span className="btn-arrow">{showTxHistory ? '▲' : '▼'}</span>
+          </button>
+        </div>
+
+        {/* Transaction History Panel */}
+        {showTxHistory && <TransactionHistory />}
+      </section>
+    </>
   );
 }
 

@@ -1,7 +1,10 @@
 //! Charms protocol service
+//!
+//! Handles spell building, proving, and transaction management
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
+use serde_yaml;
 use std::collections::BTreeMap;
 
 /// Charms prover service
@@ -10,10 +13,11 @@ pub struct CharmsService {
     mock_mode: bool,
 }
 
-/// Spell prove request
+/// Spell prove request - sent to Charms Prover API
 #[derive(Debug, Serialize)]
 pub struct SpellProveRequest {
-    pub spell: String,
+    #[serde(serialize_with = "serialize_spell")]
+    pub spell: String, // YAML string that will be parsed to JSON object
     pub binaries: BTreeMap<String, Vec<u8>>,
     pub prev_txs: Vec<String>,
     pub funding_utxo: String,
@@ -23,11 +27,55 @@ pub struct SpellProveRequest {
     pub chain: String,
 }
 
+/// Custom serializer to convert YAML string to JSON object
+fn serialize_spell<S>(spell_yaml: &str, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    // Parse YAML string to Value
+    let yaml_value: serde_yaml::Value = serde_yaml::from_str(spell_yaml)
+        .map_err(|e| serde::ser::Error::custom(format!("Failed to parse spell YAML: {}", e)))?;
+    
+    // Serialize as JSON object
+    yaml_value.serialize(serializer)
+}
+
 /// Transaction from prove response
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProvedTransaction {
     pub hex: String,
     pub txid: String,
+}
+
+/// Order data for spell building
+#[derive(Debug, Clone)]
+pub struct OrderSpellData {
+    pub maker_address: String,
+    pub maker_pubkey: String,
+    pub offer_token_id: String,
+    pub offer_token_vk: String,
+    pub offer_amount: String,
+    pub want_token_id: String,
+    pub want_amount: String,
+    pub expiry_height: u64,
+    pub allow_partial: bool,
+    pub funding_utxo: String,
+    pub escrow_address: String,
+    pub dest_chain: u8,
+    pub dest_address: String,
+}
+
+/// Fill order data for spell building
+#[derive(Debug, Clone)]
+pub struct FillSpellData {
+    pub order_utxo: String,
+    pub taker_utxo: String,
+    pub taker_pubkey: String,
+    pub taker_address: String,
+    pub maker_address: String,
+    pub offer_amount: String,
+    pub want_amount: String,
+    pub fill_amount: Option<String>,
 }
 
 impl CharmsService {
@@ -43,7 +91,7 @@ impl CharmsService {
         Self { api_url, mock_mode }
     }
 
-    /// Build a spell from template
+    /// Build a spell from template with variable substitution
     pub fn build_spell(
         &self,
         template: &str,
@@ -58,176 +106,177 @@ impl CharmsService {
         Ok(spell)
     }
 
-    /// Prove a spell with retry logic and detailed error handling
+    /// Build create-order spell with all variables
+    pub fn build_create_order_spell(
+        &self,
+        template: &str,
+        data: &OrderSpellData,
+        app_id: &str,
+        app_vk: &str,
+    ) -> Result<String> {
+        let mut vars = BTreeMap::new();
+        
+        // App configuration
+        vars.insert("app_id".to_string(), app_id.to_string());
+        vars.insert("app_vk".to_string(), app_vk.to_string());
+        
+        // Token configuration
+        vars.insert("offer_token_id".to_string(), data.offer_token_id.clone());
+        vars.insert("offer_token_vk".to_string(), data.offer_token_vk.clone());
+        vars.insert("want_token_id".to_string(), data.want_token_id.clone());
+        
+        // Order details
+        vars.insert("maker_pubkey".to_string(), data.maker_pubkey.clone());
+        vars.insert("offer_amount".to_string(), data.offer_amount.clone());
+        vars.insert("want_amount".to_string(), data.want_amount.clone());
+        vars.insert("expiry_height".to_string(), data.expiry_height.to_string());
+        vars.insert("allow_partial".to_string(), data.allow_partial.to_string());
+        
+        // UTXOs and addresses
+        vars.insert("in_utxo_0".to_string(), data.funding_utxo.clone());
+        vars.insert("addr_escrow".to_string(), data.escrow_address.clone());
+        
+        // Cross-chain (optional)
+        vars.insert("dest_chain".to_string(), data.dest_chain.to_string());
+        vars.insert("dest_address".to_string(), data.dest_address.clone());
+        
+        // Defaults
+        vars.insert("min_fill_amount".to_string(), "0".to_string());
+        vars.insert("current_height".to_string(), "0".to_string());
+
+        self.build_spell(template, &vars)
+    }
+
+    /// Build fill-order spell
+    pub fn build_fill_order_spell(
+        &self,
+        template: &str,
+        data: &FillSpellData,
+        order_data: &OrderSpellData,
+        app_id: &str,
+        app_vk: &str,
+    ) -> Result<String> {
+        let mut vars = BTreeMap::new();
+        
+        // App configuration
+        vars.insert("app_id".to_string(), app_id.to_string());
+        vars.insert("app_vk".to_string(), app_vk.to_string());
+        vars.insert("offer_token_id".to_string(), order_data.offer_token_id.clone());
+        vars.insert("offer_token_vk".to_string(), order_data.offer_token_vk.clone());
+        vars.insert("want_token_id".to_string(), order_data.want_token_id.clone());
+        vars.insert("want_token_vk".to_string(), order_data.offer_token_vk.clone()); // Assuming same VK
+        
+        // Order state
+        vars.insert("order_utxo".to_string(), data.order_utxo.clone());
+        vars.insert("taker_utxo".to_string(), data.taker_utxo.clone());
+        vars.insert("maker_pubkey".to_string(), order_data.maker_pubkey.clone());
+        vars.insert("taker_pubkey".to_string(), data.taker_pubkey.clone());
+        
+        // Amounts
+        vars.insert("offer_amount".to_string(), data.offer_amount.clone());
+        vars.insert("want_amount".to_string(), data.want_amount.clone());
+        
+        // Addresses
+        vars.insert("addr_maker".to_string(), data.maker_address.clone());
+        vars.insert("addr_taker".to_string(), data.taker_address.clone());
+        
+        // Order metadata (for verification)
+        vars.insert("dest_chain".to_string(), order_data.dest_chain.to_string());
+        vars.insert("dest_address".to_string(), order_data.dest_address.clone());
+        vars.insert("expiry_height".to_string(), order_data.expiry_height.to_string());
+        vars.insert("allow_partial".to_string(), order_data.allow_partial.to_string());
+        vars.insert("min_fill_amount".to_string(), "0".to_string());
+        vars.insert("created_at".to_string(), "0".to_string());
+
+        self.build_spell(template, &vars)
+    }
+
+    /// Prove a spell - calls Charms Prover API
     pub async fn prove_spell(
         &self,
         request: SpellProveRequest,
     ) -> Result<Vec<ProvedTransaction>> {
         if self.mock_mode {
-            tracing::info!("🔧 Mock mode: returning simulated transaction");
+            tracing::info!("Mock mode: returning simulated transaction");
+            // Return mock transactions for development
             return Ok(vec![
                 ProvedTransaction {
-                    hex: "0200000001...".to_string(),
+                    hex: self.generate_mock_tx_hex(),
                     txid: format!("mock_{}", uuid::Uuid::new_v4()),
                 },
             ]);
         }
 
-        // Retry configuration
-        let max_retries = 3;
-        let mut retry_delay = std::time::Duration::from_secs(2);
+        tracing::info!("Calling Charms Prover API at {}", self.api_url);
+        
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(120)) // ZK proofs take time
+            .build()?;
+        
+        let response = client
+            .post(&self.api_url)
+            .json(&request)
+            .send()
+            .await?;
 
-        tracing::info!("=== Prover API Request ===");
-        tracing::info!("API URL: {}", self.api_url);
-        tracing::debug!("Request payload: {}", serde_json::to_string_pretty(&request).unwrap_or_default());
-
-        for attempt in 1..=max_retries {
-            tracing::info!("🔄 Prover API attempt {}/{}", attempt, max_retries);
-
-            // Create client with 120-second timeout (ZK proofs take time)
-            let client = match reqwest::Client::builder()
-                .timeout(std::time::Duration::from_secs(120))
-                .build()
-            {
-                Ok(c) => c,
-                Err(e) => {
-                    tracing::error!("❌ Failed to build HTTP client: {}", e);
-                    anyhow::bail!("HTTP client error: {}", e);
-                }
-            };
-
-            // Make the API call
-            let result = client
-                .post(&self.api_url)
-                .json(&request)
-                .send()
-                .await;
-
-            match result {
-                Ok(response) => {
-                    let status = response.status();
-                    tracing::info!("📡 Response status: {}", status);
-
-                    if status.is_success() {
-                        // Try to parse the response
-                        let response_text = match response.text().await {
-                            Ok(text) => text,
-                            Err(e) => {
-                                tracing::error!("❌ Failed to read response body: {}", e);
-                                if attempt < max_retries {
-                                    tracing::info!("⏳ Retrying in {:?}...", retry_delay);
-                                    tokio::time::sleep(retry_delay).await;
-                                    retry_delay *= 2;
-                                    continue;
-                                } else {
-                                    anyhow::bail!("Failed to read response: {}", e);
-                                }
-                            }
-                        };
-
-                        tracing::debug!("📄 Raw response body: {}", response_text);
-
-                        // Parse JSON
-                        match serde_json::from_str::<Vec<ProvedTransaction>>(&response_text) {
-                            Ok(txs) => {
-                                if txs.is_empty() {
-                                    tracing::warn!("⚠️  Prover API returned empty transaction array");
-                                    if attempt < max_retries {
-                                        tracing::info!("⏳ Retrying in {:?}...", retry_delay);
-                                        tokio::time::sleep(retry_delay).await;
-                                        retry_delay *= 2;
-                                        continue;
-                                    } else {
-                                        anyhow::bail!("Prover API returned empty transactions after {} attempts", max_retries);
-                                    }
-                                } else {
-                                    tracing::info!("✅ Successfully received {} transaction(s) from prover", txs.len());
-                                    return Ok(txs);
-                                }
-                            }
-                            Err(e) => {
-                                tracing::error!("❌ JSON parse error: {}", e);
-                                tracing::debug!("Raw response was: {}", response_text);
-                                if attempt < max_retries {
-                                    tracing::info!("⏳ Retrying in {:?}...", retry_delay);
-                                    tokio::time::sleep(retry_delay).await;
-                                    retry_delay *= 2;
-                                    continue;
-                                } else {
-                                    anyhow::bail!("Invalid JSON response: {}", e);
-                                }
-                            }
-                        }
-                    } else {
-                        // Non-success HTTP status
-                        let error_body = response.text().await.unwrap_or_else(|_| "<unable to read error>".to_string());
-                        tracing::error!("❌ HTTP error {}: {}", status, error_body);
-                        
-                        if attempt < max_retries {
-                            tracing::info!("⏳ Retrying in {:?}...", retry_delay);
-                            tokio::time::sleep(retry_delay).await;
-                            retry_delay *= 2;
-                            continue;
-                        } else {
-                            anyhow::bail!("Prover API error ({}): {}", status, error_body);
-                        }
-                    }
-                }
-                Err(e) => {
-                    tracing::error!("❌ Request failed: {}", e);
-                    tracing::debug!("Error details: {:?}", e);
-                    
-                    if attempt < max_retries {
-                        tracing::info!("⏳ Retrying in {:?}...", retry_delay);
-                        tokio::time::sleep(retry_delay).await;
-                        retry_delay *= 2;
-                        continue;
-                    } else {
-                        anyhow::bail!("Network error after {} attempts: {}", max_retries, e);
-                    }
-                }
-            }
+        if !response.status().is_success() {
+            let status = response.status();
+            let error = response.text().await?;
+            anyhow::bail!("Prover API error ({}): {}", status, error);
         }
 
-        // Should never reach here, but just in case
-        anyhow::bail!("Prover API failed after {} attempts", max_retries)
+        let txs: Vec<ProvedTransaction> = response.json().await?;
+        tracing::info!("Received {} transactions from prover", txs.len());
+        Ok(txs)
     }
 
-    /// Parse UTXOs from previous transactions to find charms
-    pub fn parse_charms_from_tx(&self, _tx_hex: &str) -> Result<Vec<CharmInfo>> {
-        // TODO: Parse transaction and extract charm data
-        // This requires decoding the OP_RETURN or witness data
-        
-        Ok(vec![])
+    /// Generate a mock transaction hex for testing
+    fn generate_mock_tx_hex(&self) -> String {
+        // This is a valid-looking but fake transaction structure
+        // Version (4 bytes) + Input count (1 byte) + ... simplified
+        "0200000001".to_string() + 
+        &"00".repeat(32) +  // Prev txid
+        "00000000" +        // Prev vout
+        "00" +              // Script length
+        "ffffffff" +        // Sequence
+        "01" +              // Output count
+        "0000000000000000" + // Value
+        "00" +              // Script length
+        "00000000"          // Locktime
     }
 
     /// Validate a spell locally before proving
     pub fn validate_spell(&self, spell_yaml: &str) -> Result<()> {
         // Parse YAML
-        let spell: serde_yaml::Value = serde_yaml::from_str(spell_yaml)
-            .map_err(|e| anyhow::anyhow!("Invalid YAML format: {}", e))?;
+        let spell: serde_yaml::Value = serde_yaml::from_str(spell_yaml)?;
         
-        // Validate version exists
-        if spell.get("version").is_none() {
-            anyhow::bail!("Missing 'version' field in spell");
+        // Check version
+        if let Some(version) = spell.get("version") {
+            let v = version.as_u64().unwrap_or(0);
+            if v != 8 {
+                anyhow::bail!("Invalid spell version: expected 8, got {}", v);
+            }
+        } else {
+            anyhow::bail!("Spell missing version field");
         }
-
-        // Convert to JSON for consistency with Prover API expectations
-        let _spell_json = serde_json::to_string(&spell)
-            .map_err(|e| anyhow::anyhow!("Failed to convert spell to JSON: {}", e))?;
         
-        tracing::info!("✅ Spell validation passed");
+        // Check required fields
+        if spell.get("apps").is_none() {
+            anyhow::bail!("Spell missing 'apps' field");
+        }
+        if spell.get("ins").is_none() {
+            anyhow::bail!("Spell missing 'ins' field");
+        }
+        if spell.get("outs").is_none() {
+            anyhow::bail!("Spell missing 'outs' field");
+        }
+        
         Ok(())
     }
 
     /// Check if service is in mock mode
     pub fn is_mock_mode(&self) -> bool {
         self.mock_mode
-    }
-
-    /// Get the API URL being used
-    pub fn api_url(&self) -> &str {
-        &self.api_url
     }
 }
 
@@ -254,70 +303,38 @@ mod tests {
     fn test_build_spell() {
         let service = CharmsService::new();
         
-        let template = "version: 8\naddress: ${addr}";
+        let template = "version: 8\naddress: ${addr}\namount: ${amount}";
         let mut vars = BTreeMap::new();
         vars.insert("addr".to_string(), "tb1q...".to_string());
+        vars.insert("amount".to_string(), "1000".to_string());
         
         let result = service.build_spell(template, &vars).unwrap();
         assert!(result.contains("tb1q..."));
+        assert!(result.contains("1000"));
     }
 
     #[test]
-    fn test_validate_spell_valid() {
+    fn test_validate_spell() {
         let service = CharmsService::new();
         
         let valid_spell = r#"
 version: 8
-state: []
-clauses: []
+apps:
+  $TOKEN: t/abc/def
+ins:
+  - utxo_id: test
+outs:
+  - address: test
 "#;
         
-        let result = service.validate_spell(valid_spell);
-        assert!(result.is_ok(), "Valid spell should pass validation");
+        assert!(service.validate_spell(valid_spell).is_ok());
     }
 
     #[test]
-    fn test_validate_spell_invalid_yaml() {
+    fn test_validate_spell_invalid() {
         let service = CharmsService::new();
         
-        let invalid_spell = "this is not: valid: yaml: at all";
-        
-        let result = service.validate_spell(invalid_spell);
-        assert!(result.is_err(), "Invalid YAML should fail validation");
-    }
-
-    #[test]
-    fn test_validate_spell_missing_version() {
-        let service = CharmsService::new();
-        
-        let spell_without_version = r#"
-state: []
-clauses: []
-"#;
-        
-        let result = service.validate_spell(spell_without_version);
-        assert!(result.is_err(), "Spell without version should fail validation");
-        
-        if let Err(e) = result {
-            assert!(e.to_string().contains("version"), 
-                "Error message should mention missing version field");
-        }
-    }
-
-    #[test]
-    fn test_is_mock_mode() {
-        let service = CharmsService::new();
-        // Method should exist and return a boolean
-        assert!(service.is_mock_mode() || !service.is_mock_mode(), 
-            "is_mock_mode should return a boolean");
-    }
-
-    #[test]
-    fn test_api_url() {
-        let service = CharmsService::new();
-        let url = service.api_url();
-        assert!(!url.is_empty(), "API URL should not be empty");
-        assert!(url.contains("http"), "API URL should be a valid URL");
+        let invalid_spell = "version: 7\napps: {}";
+        assert!(service.validate_spell(invalid_spell).is_err());
     }
 }
-

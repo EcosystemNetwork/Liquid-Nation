@@ -2,7 +2,7 @@
 /* Disabling react-refresh/only-export-components because this file exports both 
    context utilities and provider components, which is a common pattern for context modules */
 import { createContext, useContext } from 'react';
-import { LaserEyesProvider, useLaserEyes, MAINNET } from '@omnisat/lasereyes-react';
+import { LaserEyesProvider, useLaserEyes, TESTNET4 } from '@omnisat/lasereyes-react';
 
 const WalletContext = createContext();
 
@@ -28,7 +28,7 @@ const WalletContextProvider = ({ children }) => {
 // Outer provider that wraps with LaserEyesProvider
 export const WalletProvider = ({ children }) => {
   return (
-    <LaserEyesProvider config={{ network: MAINNET }}>
+    <LaserEyesProvider config={{ network: TESTNET4 }}>
       <WalletContextProvider>
         {children}
       </WalletContextProvider>

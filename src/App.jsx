@@ -9,22 +9,35 @@ import Footer from './components/Footer';
 import Dashboard from './components/Dashboard';
 import Offers from './components/Offers';
 import CreateOrder from './components/CreateOrder';
+import FillOrder from './components/FillOrder';
 import Settings from './components/Settings';
 import Swap from './components/Swap';
 import ThemeToggle from './components/ThemeToggle';
 import WalletConnect from './components/WalletConnect';
+import SigningModal from './components/SigningModal';
 import { chainThemes } from './data';
-import { OrderProvider } from './context/OrderContext';
+import { OrderProvider, useOrders } from './context/OrderContext';
 import { useWallet } from './context/WalletContext';
 import { useEVMWallet } from './context/EVMWalletContext';
 
 function MainApp({ onBackToLanding }) {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [fillOrderId, setFillOrderId] = useState(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { address: btcAddress, connected: btcConnected } = useWallet();
   const { address: evmAddress, connected: evmConnected } = useEVMWallet();
+  const { 
+    signingModalOpen, 
+    signingData, 
+    closeSigningModal, 
+    onSigningSuccess, 
+    onSigningError 
+  } = useOrders();
 
-  const handleNavigate = (page) => {
+  const handleNavigate = (page, orderId = null) => {
+    if (page === 'fill' && orderId) {
+      setFillOrderId(orderId);
+    }
     setCurrentPage(page);
   };
 
@@ -36,6 +49,8 @@ function MainApp({ onBackToLanding }) {
         return <Offers chainThemes={chainThemes} onNavigate={handleNavigate} />;
       case 'create':
         return <CreateOrder chainThemes={chainThemes} onNavigate={handleNavigate} />;
+      case 'fill':
+        return <FillOrder orderId={fillOrderId} chainThemes={chainThemes} onNavigate={handleNavigate} />;
       case 'swap':
         return <Swap chainThemes={chainThemes} />;
       case 'settings':
@@ -99,6 +114,18 @@ function MainApp({ onBackToLanding }) {
       {showWalletModal && (
         <WalletConnect onClose={() => setShowWalletModal(false)} />
       )}
+
+      {/* Transaction Signing Modal */}
+      <SigningModal
+        isOpen={signingModalOpen}
+        onClose={closeSigningModal}
+        orderId={signingData.orderId}
+        unsignedTxs={signingData.unsignedTxs}
+        signingInstructions={signingData.signingInstructions}
+        spell={signingData.spell}
+        onSuccess={onSigningSuccess}
+        onError={onSigningError}
+      />
 
       <main className="main-stage">
         {renderPage()}

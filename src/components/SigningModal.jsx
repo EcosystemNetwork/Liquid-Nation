@@ -10,9 +10,9 @@ import { useWallet } from '../context/WalletContext';
 import { broadcastOrder } from '../services/api';
 import './SigningModal.css';
 
-const SigningModal = ({ 
-  isOpen, 
-  onClose, 
+const SigningModal = ({
+  isOpen,
+  onClose,
   orderId,
   unsignedTxs = [],
   signingInstructions = {},
@@ -25,16 +25,25 @@ const SigningModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [txResult, setTxResult] = useState(null);
-  
+
   const wallet = useWallet();
   const { connected, signPsbt, address } = wallet || {};
 
   // Check if this is a mock transaction (contains "mock" in hex or txid)
   const isMockTransaction = unsignedTxs.length > 0 && (
-    unsignedTxs[0]?.hex?.includes('mock') || 
+    unsignedTxs[0]?.hex?.includes('mock') ||
     unsignedTxs[0]?.txid?.includes('mock') ||
     unsignedTxs[0]?.hex?.length < 100
   );
+
+  // Check if the hex is a valid PSBT (starts with "cHNidP" in base64 or "70736274" in hex)
+  const isPsbtFormat = unsignedTxs.length > 0 && (
+    unsignedTxs[0]?.hex?.startsWith('cHNidP') || // base64 PSBT magic
+    unsignedTxs[0]?.hex?.startsWith('70736274') // hex PSBT magic "psbt"
+  );
+
+  // Charms transactions are ZK-proved raw transactions, not PSBTs
+  const isCharmsTransaction = unsignedTxs.length > 0 && !isPsbtFormat && !isMockTransaction;
 
   // Reset state when modal opens
   useEffect(() => {
@@ -63,8 +72,14 @@ const SigningModal = ({
 
   // Sign the transaction with wallet
   const handleSign = useCallback(async () => {
-    console.log('handleSign called:', { connected, hasSignPsbt: !!signPsbt, isMockTransaction });
-    
+    console.log('handleSign called:', {
+      connected,
+      hasSignPsbt: !!signPsbt,
+      isMockTransaction,
+      isPsbtFormat,
+      isCharmsTransaction
+    });
+
     if (unsignedTxs.length === 0) {
       setError('No transaction to sign');
       return;
@@ -75,13 +90,30 @@ const SigningModal = ({
 
     try {
       const unsignedTx = unsignedTxs[0];
-      
-      // Always try wallet signing first if connected
-      if (connected && typeof signPsbt === 'function') {
-        console.log('Attempting wallet signing with signPsbt...');
-        console.log('PSBT hex:', unsignedTx.hex?.substring(0, 50) + '...');
+
+      // Case 1: Mock transactions - simulate signing
+      if (isMockTransaction) {
+        console.log('Mock transaction - simulating signature');
+        setSignedTxHex(`signed_mock_${unsignedTx.txid || 'tx'}`);
+        setStep(2);
+        return;
+      }
+
+      // Case 2: Charms ZK-proved transactions - no wallet signing needed
+      // These transactions are already proved with ZK proofs and just need to be broadcast
+      if (isCharmsTransaction) {
+        console.log('Charms ZK-proved transaction - ready for broadcast');
+        console.log('Transaction hex:', unsignedTx.hex?.substring(0, 80) + '...');
+        // Use the raw transaction hex directly - it's already signed by the ZK proof
+        setSignedTxHex(unsignedTx.hex);
+        setStep(2);
+        return;
+      }
+
+      // Case 3: PSBT format - use wallet signing
+      if (isPsbtFormat && connected && typeof signPsbt === 'function') {
+        console.log('PSBT format detected - using wallet signPsbt');
         try {
-          // LaserEyes PSBT signing - this will open the wallet
           const signedPsbt = await signPsbt(unsignedTx.hex, {
             finalize: true,
             broadcast: false,
@@ -91,44 +123,27 @@ const SigningModal = ({
           setStep(2);
           return;
         } catch (walletErr) {
-          console.warn('Wallet signing failed:', walletErr);
-          // If mock transaction, fall back to simulation
-          if (isMockTransaction) {
-            console.log('Mock transaction - falling back to simulation');
-            setSignedTxHex(`signed_mock_${unsignedTx.txid || 'tx'}`);
-            setStep(2);
-            return;
-          }
-          // Real transaction failed - show error
+          console.error('Wallet PSBT signing failed:', walletErr);
           throw walletErr;
         }
-      } else {
-        console.log('Wallet not ready:', { connected, hasSignPsbt: typeof signPsbt });
       }
 
-      // No wallet connected
-      if (!connected) {
-        // For mock transactions, allow simulation without wallet
-        if (isMockTransaction) {
-          console.log('No wallet - simulating mock signature');
-          setSignedTxHex(`signed_mock_${unsignedTx.txid || 'tx'}`);
-          setStep(2);
-          return;
-        }
-        setError('Please connect your Bitcoin wallet first');
+      // Fallback: If we have a transaction but couldn't categorize it, try direct broadcast
+      if (unsignedTx.hex) {
+        console.log('Unknown format - attempting direct broadcast with raw hex');
+        setSignedTxHex(unsignedTx.hex);
+        setStep(2);
         return;
       }
-      
-      // Connected but no signPsbt method
-      setStep(2);
-      setError('Automatic signing not available. Please sign manually.');
+
+      setError('Unable to process transaction. Unknown format.');
     } catch (err) {
       console.error('Signing error:', err);
-      setError(`Failed to sign transaction: ${err.message}`);
+      setError(`Failed to process transaction: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
-  }, [connected, signPsbt, unsignedTxs, isMockTransaction]);
+  }, [connected, signPsbt, unsignedTxs, isMockTransaction, isPsbtFormat, isCharmsTransaction]);
 
   // Broadcast the signed transaction
   const handleBroadcast = useCallback(async () => {
@@ -142,7 +157,7 @@ const SigningModal = ({
 
     try {
       const result = await broadcastOrder(orderId, signedTxHex);
-      
+
       if (result.status === 'confirmed' || result.status === 'success') {
         setTxResult(result);
         setStep(3);
@@ -177,7 +192,7 @@ const SigningModal = ({
     <div className="signing-modal-overlay" onClick={onClose}>
       <div className="signing-modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>×</button>
-        
+
         <div className="modal-header">
           <h2>🔐 Sign Transaction</h2>
           <p className="modal-subtitle">
@@ -215,25 +230,32 @@ const SigningModal = ({
         {step === 1 && (
           <div className="step-content">
             <h3>📋 Transaction Details</h3>
-            
+
             {/* Wallet Status */}
             <div className={`wallet-status-banner ${connected ? 'connected' : 'disconnected'}`}>
               <span>{connected ? '🔗' : '⚠️'}</span>
               <p>
-                {connected 
+                {connected
                   ? <>Wallet connected: <code>{address?.slice(0, 8)}...{address?.slice(-6)}</code></>
                   : <strong>No Bitcoin wallet connected</strong>
                 }
               </p>
             </div>
-            
+
             {isMockTransaction && (
               <div className="mock-banner">
                 <span>🧪</span>
                 <p><strong>Mock Mode:</strong> This is a simulated transaction. No real Bitcoin will be sent.</p>
               </div>
             )}
-            
+
+            {isCharmsTransaction && (
+              <div className="charms-banner" style={{ background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(75, 0, 130, 0.1))', border: '1px solid rgba(138, 43, 226, 0.3)', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <span>✨</span>
+                <p style={{ margin: 0 }}><strong>Charms ZK Transaction:</strong> This transaction is verified with zero-knowledge proofs. Click to proceed to broadcast.</p>
+              </div>
+            )}
+
             {unsignedTxs && unsignedTxs.length > 0 ? (
               <div className="tx-details">
                 <div className="tx-info-row">
@@ -244,7 +266,7 @@ const SigningModal = ({
                   <span className="label">Inputs to sign:</span>
                   <span className="value">{unsignedTxs[0]?.inputs_to_sign?.length || 1}</span>
                 </div>
-                
+
                 {unsignedTxs[0]?.hex && (
                   <details className="tx-hex-details">
                     <summary>View Transaction Hex</summary>
@@ -274,21 +296,30 @@ const SigningModal = ({
             )}
 
             <div className="modal-actions">
-              {connected ? (
-                <button 
+              {/* Charms ZK Transaction - No wallet signing needed */}
+              {isCharmsTransaction ? (
+                <button
                   className="btn-primary"
                   onClick={handleSign}
                   disabled={isLoading || unsignedTxs.length === 0}
                 >
-                  {isLoading ? '⏳ Signing...' : '✍️ Sign with Wallet'}
+                  {isLoading ? '⏳ Processing...' : '✨ Proceed to Broadcast'}
                 </button>
               ) : isMockTransaction ? (
-                <button 
+                <button
                   className="btn-primary"
                   onClick={handleSign}
                   disabled={isLoading || unsignedTxs.length === 0}
                 >
                   {isLoading ? '⏳ Simulating...' : '🧪 Simulate Signature (Mock)'}
+                </button>
+              ) : connected ? (
+                <button
+                  className="btn-primary"
+                  onClick={handleSign}
+                  disabled={isLoading || unsignedTxs.length === 0}
+                >
+                  {isLoading ? '⏳ Signing...' : '✍️ Sign with Wallet'}
                 </button>
               ) : (
                 <div className="wallet-not-connected">
@@ -320,7 +351,7 @@ const SigningModal = ({
         {step === 2 && (
           <div className="step-content">
             <h3>✅ Transaction Signed</h3>
-            
+
             <div className="signed-status">
               <div className="success-icon">✓</div>
               <p>Your transaction has been signed successfully!</p>
@@ -342,7 +373,7 @@ const SigningModal = ({
               <button className="btn-secondary" onClick={() => setStep(1)}>
                 ← Back
               </button>
-              <button 
+              <button
                 className="btn-primary"
                 onClick={handleBroadcast}
                 disabled={isLoading}
@@ -357,7 +388,7 @@ const SigningModal = ({
         {step === 3 && txResult && (
           <div className="step-content">
             <h3>🎉 Transaction Confirmed!</h3>
-            
+
             <div className="success-status">
               <div className="success-icon large">✓</div>
               <p>Your tokens are now locked in escrow</p>
@@ -366,7 +397,7 @@ const SigningModal = ({
             <div className="tx-details">
               <div className="tx-info-row">
                 <span className="label">Transaction ID:</span>
-                <a 
+                <a
                   href={`https://mempool.space/testnet4/tx/${txResult.txid}`}
                   target="_blank"
                   rel="noopener noreferrer"

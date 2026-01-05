@@ -17,6 +17,23 @@ TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
+# Backend process tracking
+BACKEND_PID=""
+BACKEND_STARTED_BY_SCRIPT=false
+
+# Cleanup function
+cleanup() {
+    if [ "$BACKEND_STARTED_BY_SCRIPT" = true ] && [ -n "$BACKEND_PID" ]; then
+        echo -e "\n${YELLOW}Stopping backend (PID: $BACKEND_PID)...${NC}"
+        kill $BACKEND_PID 2>/dev/null || true
+        wait $BACKEND_PID 2>/dev/null || true
+        echo -e "${GREEN}Backend stopped.${NC}"
+    fi
+}
+
+# Register cleanup function
+trap cleanup EXIT INT TERM
+
 # Function to print test header
 print_test() {
     echo -e "\n${BLUE}========================================${NC}"
@@ -51,6 +68,32 @@ check_backend() {
     fi
 }
 
+# Function to start backend
+start_backend() {
+    echo -e "${YELLOW}Starting backend...${NC}"
+    cd backend
+    RUST_LOG=debug cargo run > /tmp/backend.log 2>&1 &
+    BACKEND_PID=$!
+    cd ..
+    BACKEND_STARTED_BY_SCRIPT=true
+    
+    echo -e "${YELLOW}Waiting for backend to be ready (PID: $BACKEND_PID)...${NC}"
+    
+    # Wait up to 60 seconds for backend to start
+    for i in {1..60}; do
+        if check_backend; then
+            echo -e "${GREEN}Backend is ready!${NC}\n"
+            return 0
+        fi
+        sleep 1
+        echo -n "."
+    done
+    
+    echo -e "\n${RED}Backend failed to start within 60 seconds${NC}"
+    echo -e "${YELLOW}Check /tmp/backend.log for errors${NC}"
+    return 1
+}
+
 echo -e "${BLUE}"
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║     Prover API Fix - Automated Test Suite             ║"
@@ -60,13 +103,18 @@ echo -e "${NC}\n"
 # Check if backend is running
 print_test "0" "Backend Status Check"
 if check_backend; then
-    print_success "Backend is running on port 3001"
+    print_success "Backend is already running on port 3001"
 else
-    print_fail "Backend is not running!"
-    echo -e "${YELLOW}Please start the backend first:${NC}"
-    echo "  cd backend"
-    echo "  RUST_LOG=debug cargo run"
-    exit 1
+    echo -e "${YELLOW}Backend is not running. Starting it automatically...${NC}\n"
+    if start_backend; then
+        print_success "Backend started successfully on port 3001"
+    else
+        print_fail "Failed to start backend!"
+        echo -e "${YELLOW}Try starting it manually:${NC}"
+        echo "  cd backend"
+        echo "  RUST_LOG=debug cargo run"
+        exit 1
+    fi
 fi
 
 # Test 1: Overall Health Check

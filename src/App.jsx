@@ -13,8 +13,8 @@ import { useEVMWallet } from './context/EVMWalletContext';
 import SigningModal from './components/SigningModal';
 import WalletConnect from './components/WalletConnect';
 
-function MainApp({ onBackToLanding }) {
-  const [currentPage, setCurrentPage] = useState('dashboard');
+function MainApp({ onBackToLanding, initialPage = 'dashboard' }) {
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [fillOrderId, setFillOrderId] = useState(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { address: btcAddress, connected: btcConnected } = useWallet();
@@ -69,6 +69,52 @@ function MainApp({ onBackToLanding }) {
         >
           <img src="/name.png" alt="Liquid Nation" className="logo-image" style={{ height: '35px' }} />
         </button>
+
+        <nav className="top-nav">
+          <button
+            className="top-nav-item"
+            onClick={onBackToLanding}
+            type="button"
+          >
+            Home
+          </button>
+          <button
+            className={`top-nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
+            onClick={() => handleNavigate('dashboard')}
+            type="button"
+          >
+            Dashboard
+          </button>
+          <button
+            className={`top-nav-item ${currentPage === 'offers' ? 'active' : ''}`}
+            onClick={() => handleNavigate('offers')}
+            type="button"
+          >
+            Offers
+          </button>
+          <button
+            className={`top-nav-item ${currentPage === 'swap' ? 'active' : ''}`}
+            onClick={() => handleNavigate('swap')}
+            type="button"
+          >
+            Swap
+          </button>
+          <button
+            className={`top-nav-item ${currentPage === 'create' ? 'active' : ''}`}
+            onClick={() => handleNavigate('create')}
+            type="button"
+          >
+            Create
+          </button>
+          <button
+            className={`top-nav-item ${currentPage === 'settings' ? 'active' : ''}`}
+            onClick={() => handleNavigate('settings')}
+            type="button"
+          >
+            Settings
+          </button>
+        </nav>
+
         <div className="top-bar-actions">
           <button
             className="wallet-connect-btn"
@@ -92,44 +138,6 @@ function MainApp({ onBackToLanding }) {
         {renderPage()}
       </main>
 
-      <nav className="bottom-nav">
-        <button
-          className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
-          onClick={() => handleNavigate('dashboard')}
-          type="button"
-        >
-          Dashboard
-        </button>
-        <button
-          className={`nav-item ${currentPage === 'offers' ? 'active' : ''}`}
-          onClick={() => handleNavigate('offers')}
-          type="button"
-        >
-          Offers
-        </button>
-        <button
-          className={`nav-item ${currentPage === 'swap' ? 'active' : ''}`}
-          onClick={() => handleNavigate('swap')}
-          type="button"
-        >
-          Swap
-        </button>
-        <button
-          className={`nav-item ${currentPage === 'create' ? 'active' : ''}`}
-          onClick={() => handleNavigate('create')}
-          type="button"
-        >
-          Create
-        </button>
-        <button
-          className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
-          onClick={() => handleNavigate('settings')}
-          type="button"
-        >
-          Settings
-        </button>
-      </nav>
-
       {showWalletModal && (
         <WalletConnect onClose={() => setShowWalletModal(false)} />
       )}
@@ -147,10 +155,13 @@ function MainApp({ onBackToLanding }) {
   );
 }
 
+
 function App() {
   const [showApp, setShowApp] = useState(false);
+  const [initialPage, setInitialPage] = useState('dashboard');
 
-  const handleLaunchApp = () => {
+  const handleLaunchApp = (page = 'dashboard') => {
+    setInitialPage(page);
     setShowApp(true);
   };
 
@@ -161,7 +172,7 @@ function App() {
   if (showApp) {
     return (
       <OrderProvider>
-        <MainApp onBackToLanding={handleBackToLanding} />
+        <MainApp onBackToLanding={handleBackToLanding} initialPage={initialPage} />
       </OrderProvider>
     );
   }
@@ -170,3 +181,4 @@ function App() {
 }
 
 export default App;
+

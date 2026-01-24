@@ -47,6 +47,36 @@
     gap: 1rem;
 }
 
+/* ===== Top Navigation ===== */
+.top-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.top-nav-item {
+    background: transparent;
+    border: none;
+    padding: 0.5rem 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: Manrope, sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: 100px;
+    transition: all 0.25s ease;
+}
+
+.top-nav-item:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.top-nav-item.active {
+    color: white;
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+}
+
 .wallet-connect-btn {
     background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
     border: none;

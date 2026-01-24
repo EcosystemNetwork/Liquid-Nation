@@ -1,24 +1,17 @@
-import { useState } from 'react';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import Features from './components/Features';
-import HowItWorks from './components/HowItWorks';
-import Stats from './components/Stats';
-import CTA from './components/CTA';
-import Footer from './components/Footer';
+import React, { useState } from 'react';
+import Home from './Home';
 import Dashboard from './components/Dashboard';
 import Offers from './components/Offers';
 import CreateOrder from './components/CreateOrder';
 import FillOrder from './components/FillOrder';
 import Settings from './components/Settings';
 import Swap from './components/Swap';
-import ThemeToggle from './components/ThemeToggle';
-import WalletConnect from './components/WalletConnect';
-import SigningModal from './components/SigningModal';
 import { chainThemes } from './data';
 import { OrderProvider, useOrders } from './context/OrderContext';
 import { useWallet } from './context/WalletContext';
 import { useEVMWallet } from './context/EVMWalletContext';
+import SigningModal from './components/SigningModal';
+import WalletConnect from './components/WalletConnect';
 
 function MainApp({ onBackToLanding }) {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -26,12 +19,12 @@ function MainApp({ onBackToLanding }) {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { address: btcAddress, connected: btcConnected } = useWallet();
   const { address: evmAddress, connected: evmConnected } = useEVMWallet();
-  const { 
-    signingModalOpen, 
-    signingData, 
-    closeSigningModal, 
-    onSigningSuccess, 
-    onSigningError 
+  const {
+    signingModalOpen,
+    signingData,
+    closeSigningModal,
+    onSigningSuccess,
+    onSigningError
   } = useOrders();
 
   const handleNavigate = (page, orderId = null) => {
@@ -39,6 +32,11 @@ function MainApp({ onBackToLanding }) {
       setFillOrderId(orderId);
     }
     setCurrentPage(page);
+  };
+
+  const formatAddress = (addr) => {
+    if (!addr) return '';
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   const renderPage = () => {
@@ -60,107 +58,70 @@ function MainApp({ onBackToLanding }) {
     }
   };
 
-  const formatAddress = (addr) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
   return (
     <div className="app-shell">
       <header className="top-bar">
-        <button 
-          className="logo-mark" 
+        <button
+          className="logo-mark"
           aria-label="Back to home"
           onClick={onBackToLanding}
           type="button"
         >
-          <img src="/logo.svg" alt="Liquid Nation" className="logo-image" />
+          <img src="/name.png" alt="Liquid Nation" className="logo-image" style={{ height: '35px' }} />
         </button>
         <div className="top-bar-actions">
-          <ThemeToggle className="top-bar-theme-toggle" />
-          <div className="wallet-group">
-            {btcConnected && (
-              <div className="wallet-pill connected" title="Bitcoin Wallet">
-                <span className="wallet-label">BTC:</span> {formatAddress(btcAddress)}
-              </div>
+          <button
+            className="wallet-connect-btn"
+            onClick={() => setShowWalletModal(true)}
+            type="button"
+          >
+            {btcConnected || evmConnected ? (
+              <span>
+                {btcConnected && formatAddress(btcAddress)}
+                {btcConnected && evmConnected && ' | '}
+                {evmConnected && formatAddress(evmAddress)}
+              </span>
+            ) : (
+              'Connect Wallet'
             )}
-            {evmConnected && (
-              <div className="wallet-pill connected" title="EVM Wallet">
-                <span className="wallet-label">EVM:</span> {formatAddress(evmAddress)}
-              </div>
-            )}
-            {!btcConnected && !evmConnected && (
-              <button 
-                className="wallet-pill" 
-                onClick={() => setShowWalletModal(true)}
-                type="button"
-              >
-                Connect Wallet
-              </button>
-            )}
-            {(btcConnected || evmConnected) && (
-              <button 
-                className="wallet-pill secondary" 
-                onClick={() => setShowWalletModal(true)}
-                type="button"
-              >
-                +
-              </button>
-            )}
-          </div>
+          </button>
         </div>
       </header>
 
-      {showWalletModal && (
-        <WalletConnect onClose={() => setShowWalletModal(false)} />
-      )}
-
-      {/* Transaction Signing Modal */}
-      <SigningModal
-        isOpen={signingModalOpen}
-        onClose={closeSigningModal}
-        orderId={signingData.orderId}
-        unsignedTxs={signingData.unsignedTxs}
-        signingInstructions={signingData.signingInstructions}
-        spell={signingData.spell}
-        onSuccess={onSigningSuccess}
-        onError={onSigningError}
-      />
-
-      <main className="main-stage">
+      <main className="main-content">
         {renderPage()}
       </main>
 
-      <nav className="bottom-nav" aria-label="Primary">
-        <button 
+      <nav className="bottom-nav">
+        <button
           className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
           onClick={() => handleNavigate('dashboard')}
           type="button"
         >
           Dashboard
         </button>
-        <button 
+        <button
           className={`nav-item ${currentPage === 'offers' ? 'active' : ''}`}
           onClick={() => handleNavigate('offers')}
           type="button"
         >
           Offers
         </button>
-        <button 
+        <button
           className={`nav-item ${currentPage === 'swap' ? 'active' : ''}`}
           onClick={() => handleNavigate('swap')}
           type="button"
         >
           Swap
         </button>
-        <button 
+        <button
           className={`nav-item ${currentPage === 'create' ? 'active' : ''}`}
           onClick={() => handleNavigate('create')}
           type="button"
         >
           Create
         </button>
-        <button 
+        <button
           className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
           onClick={() => handleNavigate('settings')}
           type="button"
@@ -168,20 +129,20 @@ function MainApp({ onBackToLanding }) {
           Settings
         </button>
       </nav>
-    </div>
-  );
-}
 
-function LandingPage({ onLaunchApp }) {
-  return (
-    <div className="landing-page">
-      <Navbar onLaunchApp={onLaunchApp} />
-      <Hero onLaunchApp={onLaunchApp} />
-      <Features />
-      <HowItWorks />
-      <Stats />
-      <CTA onLaunchApp={onLaunchApp} />
-      <Footer />
+      {showWalletModal && (
+        <WalletConnect onClose={() => setShowWalletModal(false)} />
+      )}
+
+      {signingModalOpen && signingData && (
+        <SigningModal
+          isOpen={signingModalOpen}
+          onClose={closeSigningModal}
+          transactionData={signingData}
+          onSuccess={onSigningSuccess}
+          onError={onSigningError}
+        />
+      )}
     </div>
   );
 }
@@ -205,7 +166,7 @@ function App() {
     );
   }
 
-  return <LandingPage onLaunchApp={handleLaunchApp} />;
+  return <Home onLaunchApp={handleLaunchApp} />;
 }
 
 export default App;

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
-import { 
-  UNISAT, 
-  LEATHER, 
-  MAGIC_EDEN, 
-  OKX, 
+import './WalletConnect.css';
+import {
+  UNISAT,
+  LEATHER,
+  MAGIC_EDEN,
+  OKX,
   XVERSE,
   WIZZ,
   PHANTOM,
@@ -20,7 +21,7 @@ function WalletConnect({ onClose }) {
   const { connect: connectEVM, connectors, connected: evmConnected } = useEVMWallet();
   const [walletType, setWalletType] = useState('bitcoin');
   const [showEVMPrompt, setShowEVMPrompt] = useState(false);
-  
+
   // Check if we should show EVM prompt after BTC connection
   useEffect(() => {
     if (btcConnected && !evmConnected && !showEVMPrompt) {
@@ -94,8 +95,8 @@ function WalletConnect({ onClose }) {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{showEVMPrompt ? 'Connect EVM Wallet' : 'Connect Wallet'}</h2>
-          <button 
-            className="modal-close" 
+          <button
+            className="modal-close"
             onClick={onClose}
             aria-label="Close"
           >

@@ -99,11 +99,11 @@ async fn run_migrations(pool: &DbPool) -> Result<()> {
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)")
         .execute(pool)
         .await?;
-    
+
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_orders_maker ON orders(maker_address)")
         .execute(pool)
         .await?;
-    
+
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_transactions_order ON transactions(order_id)")
         .execute(pool)
         .await?;
@@ -129,8 +129,8 @@ pub struct OrderRecord {
     pub expiry_height: Option<i64>,
     pub utxo_id: Option<String>,
     pub tx_id: Option<String>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 /// Transaction record for database
@@ -142,10 +142,10 @@ pub struct TransactionRecord {
     pub tx_hex: Option<String>,
     pub txid: Option<String>,
     pub status: String,
-    pub signed_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub broadcast_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub confirmed_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub signed_at: Option<chrono::NaiveDateTime>,
+    pub broadcast_at: Option<chrono::NaiveDateTime>,
+    pub confirmed_at: Option<chrono::NaiveDateTime>,
+    pub created_at: chrono::NaiveDateTime,
 }
 
 // ============================================
@@ -188,30 +188,26 @@ pub async fn insert_order(pool: &DbPool, order: &OrderRecord) -> Result<()> {
 
 /// Get all orders
 pub async fn get_all_orders(pool: &DbPool) -> Result<Vec<OrderRecord>> {
-    let orders = sqlx::query_as::<_, OrderRecord>(
-        "SELECT * FROM orders ORDER BY created_at DESC"
-    )
-    .fetch_all(pool)
-    .await?;
+    let orders = sqlx::query_as::<_, OrderRecord>("SELECT * FROM orders ORDER BY created_at DESC")
+        .fetch_all(pool)
+        .await?;
 
     Ok(orders)
 }
 
 /// Get order by ID
 pub async fn get_order_by_id(pool: &DbPool, id: &str) -> Result<Option<OrderRecord>> {
-    let order = sqlx::query_as::<_, OrderRecord>(
-        "SELECT * FROM orders WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?;
+    let order = sqlx::query_as::<_, OrderRecord>("SELECT * FROM orders WHERE id = $1")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
 
     Ok(order)
 }
 
 /// Update order status
 pub async fn update_order_status(pool: &DbPool, id: &str, status: &str) -> Result<()> {
-    let now = chrono::Utc::now();
+    let now = chrono::Utc::now().naive_utc();
     sqlx::query("UPDATE orders SET status = $1, updated_at = $2 WHERE id = $3")
         .bind(status)
         .bind(now)
@@ -224,7 +220,7 @@ pub async fn update_order_status(pool: &DbPool, id: &str, status: &str) -> Resul
 
 /// Update order transaction ID
 pub async fn update_order_tx_id(pool: &DbPool, id: &str, tx_id: &str) -> Result<()> {
-    let now = chrono::Utc::now();
+    let now = chrono::Utc::now().naive_utc();
     sqlx::query("UPDATE orders SET tx_id = $1, updated_at = $2 WHERE id = $3")
         .bind(tx_id)
         .bind(now)
@@ -276,9 +272,12 @@ pub async fn insert_transaction(pool: &DbPool, tx: &TransactionRecord) -> Result
 }
 
 /// Get transactions by order ID
-pub async fn get_transactions_by_order(pool: &DbPool, order_id: &str) -> Result<Vec<TransactionRecord>> {
+pub async fn get_transactions_by_order(
+    pool: &DbPool,
+    order_id: &str,
+) -> Result<Vec<TransactionRecord>> {
     let txs = sqlx::query_as::<_, TransactionRecord>(
-        "SELECT * FROM transactions WHERE order_id = $1 ORDER BY created_at DESC"
+        "SELECT * FROM transactions WHERE order_id = $1 ORDER BY created_at DESC",
     )
     .bind(order_id)
     .fetch_all(pool)
@@ -294,16 +293,18 @@ pub async fn update_transaction_status(
     status: &str,
     txid: Option<&str>,
 ) -> Result<()> {
-    let now = chrono::Utc::now();
-    
+    let now = chrono::Utc::now().naive_utc();
+
     if let Some(txid) = txid {
-        sqlx::query("UPDATE transactions SET status = $1, txid = $2, broadcast_at = $3 WHERE id = $4")
-            .bind(status)
-            .bind(txid)
-            .bind(now)
-            .bind(id)
-            .execute(pool)
-            .await?;
+        sqlx::query(
+            "UPDATE transactions SET status = $1, txid = $2, broadcast_at = $3 WHERE id = $4",
+        )
+        .bind(status)
+        .bind(txid)
+        .bind(now)
+        .bind(id)
+        .execute(pool)
+        .await?;
     } else {
         sqlx::query("UPDATE transactions SET status = $1 WHERE id = $2")
             .bind(status)
@@ -314,4 +315,3 @@ pub async fn update_transaction_status(
 
     Ok(())
 }
-

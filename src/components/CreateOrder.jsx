@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useOrders } from '../context/OrderContext';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
+import './FormPanel.css';
 
 function CreateOrder({ chainThemes, onNavigate }) {
   const { createOrder, loading, error } = useOrders();
   const { address: btcAddress, connected: btcConnected } = useWallet();
   const { address: evmAddress, connected: evmConnected } = useEVMWallet();
-  
+
   const [orderType, setOrderType] = useState('limit-buy');
   const [asset, setAsset] = useState('BTC');
   const [amount, setAmount] = useState('');
@@ -17,11 +18,11 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const [premium, setPremium] = useState('');
   const [submitError, setSubmitError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Manual wallet address inputs for testnet
   const [manualBtcAddress, setManualBtcAddress] = useState('');
   const [manualEvmAddress, setManualEvmAddress] = useState('');
-  
+
   // Use manual address if provided, otherwise use connected wallet
   const effectiveBtcAddress = manualBtcAddress || btcAddress;
   const effectiveEvmAddress = manualEvmAddress || evmAddress;
@@ -40,7 +41,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
-    
+
     // Validate wallet - either connected or manual address required
     if (!effectiveBtcAddress && !effectiveEvmAddress) {
       setSubmitError('Please connect a wallet or enter a testnet address');
@@ -60,7 +61,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
 
     try {
       setIsSubmitting(true);
-      
+
       // Create the order with all the form data including wallet addresses
       const newOrder = {
         orderType,
@@ -72,9 +73,9 @@ function CreateOrder({ chainThemes, onNavigate }) {
         btcWallet: effectiveBtcAddress,
         evmWallet: effectiveEvmAddress,
       };
-      
+
       await createOrder(newOrder);
-      
+
       // Reset form
       setOrderType('limit-buy');
       setAsset('BTC');
@@ -84,7 +85,7 @@ function CreateOrder({ chainThemes, onNavigate }) {
       setPartialFills(true);
       setPremium('');
       // Keep wallet addresses for convenience
-      
+
       // Navigate back to dashboard to see the newly created order
       if (onNavigate) {
         onNavigate('dashboard');
@@ -98,12 +99,12 @@ function CreateOrder({ chainThemes, onNavigate }) {
   };
 
   return (
-    <section className="offers-panel" aria-label="Create order">
-      <div className="panel-header">
+    <section className="form-panel" aria-label="Create order">
+      <div className="form-panel-header">
         <h1>Create Order</h1>
       </div>
 
-      <div className="create-order-form">
+      <div className="form-panel-content">
         <form onSubmit={handleSubmit}>
           <div className="form-section">
             <label className="form-label">Order Type</label>
@@ -268,11 +269,11 @@ function CreateOrder({ chainThemes, onNavigate }) {
                   className={`token-selector-btn ${acceptedTokens.includes(token) ? 'selected' : ''}`}
                   onClick={() => handleTokenToggle(token)}
                   style={{
-                    background: acceptedTokens.includes(token) 
-                      ? chainThemes[token].background 
+                    background: acceptedTokens.includes(token)
+                      ? chainThemes[token].background
                       : '#f0f0f0',
-                    color: acceptedTokens.includes(token) 
-                      ? chainThemes[token].textColor 
+                    color: acceptedTokens.includes(token)
+                      ? chainThemes[token].textColor
                       : '#666'
                   }}
                 >
@@ -294,11 +295,11 @@ function CreateOrder({ chainThemes, onNavigate }) {
           </div>
 
           {(submitError || error) && (
-            <div className="form-error" style={{ 
-              padding: '12px', 
-              background: '#fee', 
-              border: '1px solid #fcc', 
-              borderRadius: '8px', 
+            <div className="form-error" style={{
+              padding: '12px',
+              background: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '8px',
               color: '#c33',
               marginBottom: '16px'
             }}>
@@ -307,8 +308,8 @@ function CreateOrder({ chainThemes, onNavigate }) {
           )}
 
           <div className="form-actions">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn-submit"
               disabled={isSubmitting || loading || (!effectiveBtcAddress && !effectiveEvmAddress)}
             >

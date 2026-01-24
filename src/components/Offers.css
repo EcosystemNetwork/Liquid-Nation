@@ -1,0 +1,419 @@
+/* Offers Page Styles - Matching Dashboard Design System */
+
+/* ===== Offers Panel ===== */
+.offers-panel {
+    background: linear-gradient(180deg, rgba(20, 20, 20, 0.9) 0%, rgba(9, 9, 9, 0.95) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    position: relative;
+}
+
+.offers-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(225, 139, 63, 0.3), transparent 50%, rgba(123, 76, 35, 0.3));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.offers-panel:hover::before {
+    opacity: 1;
+}
+
+/* ===== Panel Header ===== */
+.offers-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.offers-panel .panel-header h1 {
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* ===== Create Order Button ===== */
+.create-order-wrapper {
+    position: relative;
+}
+
+.btn-create-order {
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+    border: none;
+    border-radius: 100px;
+    padding: 0.625rem 1.25rem;
+    color: white;
+    font-family: Manrope, sans-serif;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-create-order:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(225, 139, 63, 0.35);
+}
+
+.create-order-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    background: rgba(20, 20, 20, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 180px;
+    z-index: 100;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.create-order-menu .menu-item {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: Manrope, sans-serif;
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.create-order-menu .menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+/* ===== Table ===== */
+.offers-panel .table {
+    width: 100%;
+}
+
+.offers-panel .table-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 0.8fr 1.8fr 0.6fr 0.8fr 0.8fr 1fr;
+    padding: 1rem 2rem;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease;
+}
+
+.offers-panel .table-row:hover:not(.table-head) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.offers-panel .table-row.table-head {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.offers-panel .table-head .table-cell {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.offers-panel .table-cell {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.875rem;
+}
+
+.offers-panel .text-strong {
+    color: white;
+    font-weight: 500;
+}
+
+/* ===== Profile Cell - Force Horizontal Layout ===== */
+.offers-panel .profile-cell,
+.offers-panel .table-cell.profile-cell,
+section.offers-panel .profile-cell {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    justify-content: flex-start !important;
+}
+
+.offers-panel .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+}
+
+.offers-panel .profile-name {
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+/* ===== Token Badge - FIXED ===== */
+.token-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    min-width: auto;
+    width: auto;
+}
+
+/* ===== Accepts Cell - Multiple Badges ===== */
+.accepts-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+/* ===== Status Indicator - Circular Progress ===== */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.status-ring {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: white;
+}
+
+.status-ring::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    background: #1a2332;
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.status-ring span {
+    position: relative;
+    z-index: 1;
+}
+
+.status-zero {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.875rem;
+}
+
+/* ===== Actions Cell ===== */
+.actions-cell {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.action-buttons-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-fill-order {
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    color: white;
+    font-family: Manrope, sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+}
+
+.btn-fill-order:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(225, 139, 63, 0.35);
+}
+
+.btn-delete-order {
+    background: rgba(255, 100, 100, 0.15);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    color: #ff6b6b;
+    font-family: Manrope, sans-serif;
+    font-weight: 500;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-delete-order:hover {
+    background: rgba(255, 100, 100, 0.25);
+    border-color: rgba(255, 100, 100, 0.5);
+}
+
+/* ===== Panel Footer ===== */
+.offers-panel .panel-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.icon-button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 0.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.icon-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+/* ===== Pagination ===== */
+.offers-panel .pagination {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.offers-panel .per-page {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+}
+
+.offers-panel .page-window {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+}
+
+.offers-panel .dropdown {
+    position: relative;
+}
+
+.offers-panel .dropdown button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    color: white;
+    font-family: Manrope, sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.offers-panel .dropdown button:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.offers-panel .dropdown-menu {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 0.5rem;
+    background: rgba(20, 20, 20, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 80px;
+    z-index: 100;
+}
+
+.offers-panel .dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.offers-panel .dropdown-menu button:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.offers-panel .dropdown-menu button.active {
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+    color: white;
+}
+
+.offers-panel .pager-arrows {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.offers-panel .pager-arrows button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    padding: 0.35rem 0.6rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.offers-panel .pager-arrows button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.offers-panel .pager-arrows button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

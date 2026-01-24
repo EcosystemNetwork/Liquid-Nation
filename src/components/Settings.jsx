@@ -3,6 +3,7 @@ import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../context/ThemeContext';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
+import './FormPanel.css';
 
 function Settings() {
   const [username, setUsername] = useState('HunterBeast.eth');
@@ -19,16 +20,16 @@ function Settings() {
   };
 
   return (
-    <section className="offers-panel" aria-label="Settings">
-      <div className="panel-header">
+    <section className="form-panel" aria-label="Settings">
+      <div className="form-panel-header">
         <h1>Settings</h1>
       </div>
 
-      <div className="settings-content">
+      <div className="form-panel-content">
         <form onSubmit={handleSubmit}>
-          <div className="settings-section">
-            <h2 className="settings-section-title">Profile</h2>
-            
+          <div className="form-section">
+            <h2 className="form-section-title">Profile</h2>
+
             <div className="form-group">
               <label className="form-label" htmlFor="username">Username</label>
               <input
@@ -59,8 +60,8 @@ function Settings() {
                 {btcConnected ? btcAddress : 'Not Connected'}
               </div>
               {btcConnected && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-secondary-small"
                   onClick={() => disconnectBTC()}
                   style={{ marginTop: '8px' }}
@@ -76,8 +77,8 @@ function Settings() {
                 {evmConnected ? evmAddress : 'Not Connected'}
               </div>
               {evmConnected && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-secondary-small"
                   onClick={() => disconnectEVM()}
                   style={{ marginTop: '8px' }}
@@ -88,9 +89,9 @@ function Settings() {
             </div>
           </div>
 
-          <div className="settings-section">
-            <h2 className="settings-section-title">Preferences</h2>
-            
+          <div className="form-section">
+            <h2 className="form-section-title">Preferences</h2>
+
             <div className="form-group">
               <label className="form-checkbox">
                 <input
@@ -125,9 +126,9 @@ function Settings() {
             </div>
           </div>
 
-          <div className="settings-section">
-            <h2 className="settings-section-title">Security</h2>
-            
+          <div className="form-section">
+            <h2 className="form-section-title">Security</h2>
+
             <div className="form-group">
               <label className="form-label">Two-Factor Authentication</label>
               <p className="form-help">Add an extra layer of security to your account</p>

@@ -101,6 +101,7 @@ export async function getOrder(orderId) {
  * @param {string} orderData.fundingUtxo - UTXO to fund the order
  */
 export async function createOrder(orderData) {
+  console.log('🔌 API createOrder sending:', orderData);
   return apiRequest('/orders', {
     method: 'POST',
     body: JSON.stringify({
@@ -114,6 +115,7 @@ export async function createOrder(orderData) {
       allow_partial: orderData.allowPartial,
       expiry_blocks: orderData.expiryBlocks,
       funding_utxo: orderData.fundingUtxo,
+      funding_utxo_value: orderData.fundingUtxoValue,
     }),
   });
 }

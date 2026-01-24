@@ -146,7 +146,10 @@ function MainApp({ onBackToLanding, initialPage = 'dashboard' }) {
         <SigningModal
           isOpen={signingModalOpen}
           onClose={closeSigningModal}
-          transactionData={signingData}
+          orderId={signingData.orderId}
+          unsignedTxs={signingData.unsignedTxs}
+          signingInstructions={signingData.signingInstructions}
+          spell={signingData.spell}
           onSuccess={onSigningSuccess}
           onError={onSigningError}
         />

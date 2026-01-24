@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOrders } from '../context/OrderContext';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
@@ -6,7 +6,7 @@ import './FormPanel.css';
 
 function CreateOrder({ chainThemes, onNavigate }) {
   const { createOrder, loading, error } = useOrders();
-  const { address: btcAddress, connected: btcConnected } = useWallet();
+  const { address: btcAddress, connected: btcConnected, getUtxos } = useWallet();
   const { address: evmAddress, connected: evmConnected } = useEVMWallet();
 
   const [orderType, setOrderType] = useState('limit-buy');
@@ -19,6 +19,11 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const [submitError, setSubmitError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // UTXO state
+  const [utxos, setUtxos] = useState([]);
+  const [selectedUtxo, setSelectedUtxo] = useState(null);
+  const [loadingUtxos, setLoadingUtxos] = useState(false);
+
   // Manual wallet address inputs for testnet
   const [manualBtcAddress, setManualBtcAddress] = useState('');
   const [manualEvmAddress, setManualEvmAddress] = useState('');
@@ -29,6 +34,30 @@ function CreateOrder({ chainThemes, onNavigate }) {
 
   const chains = Object.keys(chainThemes);
   const availableAssets = chains; // Use the same chains/tokens as available assets
+
+  // Fetch UTXOs when BTC wallet is connected
+  useEffect(() => {
+    const fetchUtxos = async () => {
+      if (btcConnected && btcAddress && getUtxos) {
+        setLoadingUtxos(true);
+        try {
+          const fetchedUtxos = await getUtxos(btcAddress);
+          console.log('Fetched UTXOs:', fetchedUtxos);
+          setUtxos(fetchedUtxos || []);
+          // Auto-select first UTXO if available
+          if (fetchedUtxos && fetchedUtxos.length > 0) {
+            setSelectedUtxo(fetchedUtxos[0]);
+          }
+        } catch (err) {
+          console.error('Failed to fetch UTXOs:', err);
+          setUtxos([]);
+        } finally {
+          setLoadingUtxos(false);
+        }
+      }
+    };
+    fetchUtxos();
+  }, [btcConnected, btcAddress, getUtxos]);
 
   const handleTokenToggle = (token) => {
     if (acceptedTokens.includes(token)) {
@@ -59,10 +88,16 @@ function CreateOrder({ chainThemes, onNavigate }) {
       return;
     }
 
+    // Validate UTXO selection for connected wallets
+    if (btcConnected && !selectedUtxo) {
+      setSubmitError('Please select a UTXO to fund your order');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      // Create the order with all the form data including wallet addresses
+      // Create the order with all the form data including wallet addresses and UTXO
       const newOrder = {
         orderType,
         asset: `${amount} ${asset}`,
@@ -72,7 +107,13 @@ function CreateOrder({ chainThemes, onNavigate }) {
         premium: `${premium}%`,
         btcWallet: effectiveBtcAddress,
         evmWallet: effectiveEvmAddress,
+        // Include UTXO for funding the order
+        fundingUtxo: selectedUtxo ? `${selectedUtxo.txid}:${selectedUtxo.vout}` : '',
+        fundingUtxoValue: selectedUtxo ? selectedUtxo.value : 0,
       };
+
+      console.log('📤 Creating order with data:', newOrder);
+      console.log('📦 Selected UTXO:', selectedUtxo);
 
       await createOrder(newOrder);
 
@@ -233,6 +274,59 @@ function CreateOrder({ chainThemes, onNavigate }) {
                   </p>
                 )}
               </div>
+
+              {/* UTXO Selection */}
+              {btcConnected && (
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label">Select UTXO to Fund Order</label>
+                  {loadingUtxos ? (
+                    <p className="form-help">Loading UTXOs...</p>
+                  ) : utxos.length === 0 ? (
+                    <p className="form-help" style={{ color: '#f90' }}>
+                      No UTXOs found. Make sure you have testnet BTC in your wallet.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {utxos.map((utxo, index) => (
+                        <button
+                          key={`${utxo.txid}:${utxo.vout}`}
+                          type="button"
+                          onClick={() => setSelectedUtxo(utxo)}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            background: selectedUtxo?.txid === utxo.txid && selectedUtxo?.vout === utxo.vout
+                              ? 'linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%)'
+                              : 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid',
+                            borderColor: selectedUtxo?.txid === utxo.txid && selectedUtxo?.vout === utxo.vout
+                              ? 'transparent'
+                              : 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '10px',
+                            color: 'white',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontFamily: 'Manrope, sans-serif',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                              {utxo.txid.slice(0, 8)}...{utxo.txid.slice(-8)}:{utxo.vout}
+                            </span>
+                            <span style={{ fontWeight: '600', color: '#4a9' }}>
+                              {(utxo.value / 100000000).toFixed(8)} tBTC
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {selectedUtxo && (
+                    <p className="form-help" style={{ color: '#4a9', marginTop: '8px' }}>
+                      ✓ Selected: {(selectedUtxo.value / 100000000).toFixed(8)} tBTC
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label" htmlFor="evmWallet">EVM Address (Optional)</label>

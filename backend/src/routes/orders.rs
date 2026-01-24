@@ -505,6 +505,14 @@ pub async fn create_order(
         tracing::info!("Order {} saved to database", order_id);
     }
 
+    tracing::info!(
+        "Returning create order response with {} unsigned transactions",
+        unsigned_txs.len()
+    );
+    if let Some(first_tx) = unsigned_txs.first() {
+        tracing::info!("First unsigned tx: txid={}", first_tx.txid);
+    }
+
     Json(CreateOrderResponse {
         order,
         spell: SpellData {

@@ -19,11 +19,11 @@ const Home = ({ onLaunchApp }) => {
                             <nav role="navigation" className="nav-menu w-nav-menu">
                                 <div className="nav-menu">
                                     <a href="#about" className="nav-link">Home</a>
-                                    <a href="#start" className="nav-link">Dashboard</a>
-                                    <a href="#feedback" className="nav-link">Offers</a>
-                                    <a href="#download" className="nav-link">Create</a>
-                                    <a href="#faq" className="nav-link">Swap</a>
-                                    <a href="#faq" className="nav-link">Settings</a>
+                                    <button onClick={() => onLaunchApp('dashboard')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Dashboard</button>
+                                    <button onClick={() => onLaunchApp('offers')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Offers</button>
+                                    <button onClick={() => onLaunchApp('create')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Create</button>
+                                    <button onClick={() => onLaunchApp('swap')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Swap</button>
+                                    <button onClick={() => onLaunchApp('settings')} className="nav-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Settings</button>
                                 </div>
                             </nav>
                         </div>

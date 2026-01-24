@@ -5,14 +5,14 @@
  * for order management, wallet operations, and Charms protocol integration.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001/api';
 
 /**
  * Generic API request handler
  */
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
@@ -27,12 +27,12 @@ async function apiRequest(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: response.statusText }));
       throw new Error(error.message || `API Error: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error(`API Error (${endpoint}):`, error);
@@ -64,7 +64,7 @@ export async function checkHealth() {
  */
 export async function listOrders(filters = {}) {
   const params = new URLSearchParams();
-  
+
   if (filters.status) params.append('status', filters.status);
   if (filters.offerToken) params.append('offer_token', filters.offerToken);
   if (filters.wantToken) params.append('want_token', filters.wantToken);
@@ -73,7 +73,7 @@ export async function listOrders(filters = {}) {
   if (filters.destChain) params.append('dest_chain', filters.destChain);
   if (filters.limit) params.append('limit', filters.limit.toString());
   if (filters.offset) params.append('offset', filters.offset.toString());
-  
+
   const query = params.toString();
   return apiRequest(`/orders${query ? `?${query}` : ''}`);
 }
@@ -282,11 +282,11 @@ export async function getTransactionStatus(txid) {
  */
 export async function listEscrows(filters = {}) {
   const params = new URLSearchParams();
-  
+
   if (filters.status) params.append('status', filters.status);
   if (filters.depositor) params.append('depositor', filters.depositor);
   if (filters.recipient) params.append('recipient', filters.recipient);
-  
+
   const query = params.toString();
   return apiRequest(`/escrows${query ? `?${query}` : ''}`);
 }
@@ -453,7 +453,7 @@ export function shortenAddress(address, chars = 6) {
 export default {
   // Health
   checkHealth,
-  
+
   // Orders
   listOrders,
   getOrder,
@@ -462,18 +462,18 @@ export default {
   partialFillOrder,
   cancelOrder,
   broadcastOrder,
-  
+
   // Wallet
   connectWallet,
   getWalletBalance,
   getWalletUtxos,
   getNewAddress,
-  
+
   // Spells
   proveSpell,
   broadcastTransactions,
   getTransactionStatus,
-  
+
   // Escrows
   listEscrows,
   getEscrow,
@@ -484,7 +484,7 @@ export default {
   resolveDispute,
   getEscrowsByDepositor,
   getEscrowsByRecipient,
-  
+
   // Utilities
   formatBtc,
   parseBtc,

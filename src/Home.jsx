@@ -1,6 +1,5 @@
 import React from 'react';
-
-const Home = () => {
+const Home = ({ onLaunchApp }) => {
     return (
         <div className="page-wrapper">
             <div className="bg-navbar-wrapper">
@@ -29,7 +28,7 @@ const Home = () => {
                             </nav>
                         </div>
                         <div className="nuv-end">
-                            <a href="#download" className="button-blur w-button">Launch App</a>
+                            <button onClick={onLaunchApp} className="button-blur w-button">Launch App</button>
                             <div className="menu-btn w-nav-button">
                                 <div className="burger">
                                     <div className="burger-1">
@@ -60,9 +59,9 @@ const Home = () => {
                                             <h1 className="text-color-white">Trade Across Chains with</h1>
                                             <h2 className="text-color-white-60" style={{ marginTop: '-20px' }}><img src="/name.png" alt="Liquid Nation Logo" style={{ height: '110px', width: 'auto' }} /></h2>
                                         </div>
-                                        <a href="#download" className="button w-inline-block">
+                                        <button onClick={onLaunchApp} className="button w-inline-block">
                                             <div>Launch App</div>
-                                        </a>
+                                        </button>
                                     </div>
                                     <div className="hero-middle-spacer"></div>
                                     <div className="hero-dashboard">
@@ -175,10 +174,10 @@ const Home = () => {
                                             <div id="w-node-_4b1c4cb3-6002-a5dc-214a-84f54548773e-d144478d" className="bento-card-big">
                                                 <div className="h3-wrapper">
                                                     <div className="text-color-white ">
-                                                        <h3 className="clip is-mobile-20">Powered by Monero &amp; Tor</h3>
+                                                        <h3 className="clip is-mobile-20">Powered by Charms Protocol.</h3>
                                                     </div>
                                                     <div>Secure Connection. Private Blockchain.</div>
-                                                </div><img src="images/Bento-grid-3.png" loading="lazy" alt="" className="bento-big-image" />
+                                                </div><img src="images/charms-logo.png" loading="lazy" alt="Charms Protocol" className="bento-big-image" style={{ objectFit: 'contain' }} />
                                                 <div className="moner-tor_wrapper"><img src="images/Icon-Container.png" loading="lazy" alt="" className="tor-monero-image" /></div>
                                             </div>
                                             <div className="stroke-rectangle is-white is-12"></div>
@@ -219,9 +218,9 @@ const Home = () => {
                                             <div className="sticky-part-steps">
                                                 <div className="h2-and-button">
                                                     <h2 className="text-color-white">Simple steps to trade across chains</h2>
-                                                    <a href="#download" className="button w-inline-block">
+                                                    <button onClick={onLaunchApp} className="button w-inline-block">
                                                         <div>Launch App</div>
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -407,17 +406,16 @@ const Home = () => {
                     <div className="overflow-hidden">
                         <div className="padding-global">
                             <div className="container-large">
-                                <div className="spacer-xhuge is-half"></div>
                                 <div id="download" className="spacer-xhuge is-half"></div>
                                 <div className="block-wrapper">
                                     <div className="h2-center">
-                                        <div className="clip is-520">
+                                        <div className="clip is-720">
                                             <div className="text-color-white">
-                                                <h2>Download Liquid Nation for your platform</h2>
+                                                <h2>Ecosystem & Community</h2>
                                             </div>
                                         </div>
                                         <div className="clip is-520">
-                                            <div>Choose the right version for your operating system and install Liquid Nation to start exchanging p2p.</div>
+                                            <div>Join the revolution. Contribute to the code, learn from documentation, or connect with the community.</div>
                                         </div>
                                     </div>
                                     <div className="download-grid-and-cta">
@@ -425,12 +423,15 @@ const Home = () => {
                                             <div className="anime-stroke-card-wrapper">
                                                 <div className="download-card">
                                                     <div className="download-card-top">
-                                                        <div className="icon-wrapper-circle"><img src="images/Icon.png" loading="lazy" alt="" className="icon-1x1-32" /></div>
-                                                        <div className="subtitle-18">Liquid Nation for Windows</div>
+                                                        <div className="icon-wrapper-circle">
+                                                            <div className="icon-1x1-32 w-embed"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="white"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.604-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" /></svg></div>
+                                                        </div>
+                                                        <div className="subtitle-18">Liquid Nation Codebase</div>
+                                                        <div className="text-main-14 text-color-white-60">Open Source Code</div>
                                                     </div>
                                                     <div className="download-card-bottom">
                                                         <a href="#" className="button-second w-inline-block">
-                                                            <div>Download</div>
+                                                            <div>Visit</div>
                                                         </a>
                                                     </div>
                                                 </div>
@@ -440,18 +441,14 @@ const Home = () => {
                                             <div id="w-node-_591ec9c7-21ae-f317-7bba-7dbbf5685aa7-d144478d" className="anime-stroke-card-wrapper">
                                                 <div id="w-node-_93d8099f-9e86-4265-5fc4-49f1532fac44-d144478d" className="download-card">
                                                     <div className="download-card-top">
-                                                        <div className="icon-wrapper-circle"><img src="images/Apple.png" loading="lazy" alt="" className="icon-1x1-32" /></div>
-                                                        <div className="subtitle-18">Liquid Nation for Mac</div>
+                                                        <div className="icon-wrapper-circle"><img src="images/Icon-Container.png" loading="lazy" alt="" className="icon-1x1-32" /></div>
+                                                        <div className="subtitle-18">Documentation</div>
+                                                        <div className="text-main-14 text-color-white-60">Learn how it works</div>
                                                     </div>
                                                     <div className="download-card-bottom">
-                                                        <div className="macos-buttons">
-                                                            <a href="#" className="button-second w-inline-block">
-                                                                <div>Intel</div>
-                                                            </a>
-                                                            <a href="#" className="button-second w-inline-block">
-                                                                <div>Apple Silicon</div>
-                                                            </a>
-                                                        </div>
+                                                        <a href="#" className="button-second w-inline-block">
+                                                            <div>Visit</div>
+                                                        </a>
                                                     </div>
                                                 </div>
                                                 <div className="stroke-rectangle is-white"></div>
@@ -460,24 +457,14 @@ const Home = () => {
                                             <div id="w-node-_113703f8-e64d-68c2-9b61-62eac6dfb456-d144478d" className="anime-stroke-card-wrapper">
                                                 <div id="w-node-ae400f10-27e9-3666-43ef-8df5b06d8fc3-d144478d" className="download-card">
                                                     <div className="download-card-top">
-                                                        <div className="icon-wrapper-circle"><img src="images/Linux.png" loading="lazy" alt="" className="icon-1x1-32" /></div>
-                                                        <div className="subtitle-18">Liquid Nation for Linux</div>
+                                                        <div className="icon-wrapper-circle"><img src="images/Hands.png" loading="lazy" alt="" className="icon-1x1-32" /></div>
+                                                        <div className="subtitle-18">Community</div>
+                                                        <div className="text-main-14 text-color-white-60">Discord</div>
                                                     </div>
                                                     <div className="download-card-bottom">
-                                                        <div className="linux-grid-buttons">
-                                                            <a href="#" className="button-second w-inline-block">
-                                                                <div>AppImage</div>
-                                                            </a>
-                                                            <a id="w-node-_0ca29381-0807-e1ae-5f52-4525573ab040-d144478d" href="#" className="button-second w-inline-block">
-                                                                <div>Flatpak</div>
-                                                            </a>
-                                                            <a id="w-node-cb1d4758-4f1b-812d-95a5-cf1bbd0b269b-d144478d" href="#" className="button-second is-no-fill w-inline-block">
-                                                                <div>.deb</div>
-                                                            </a>
-                                                            <a id="w-node-_27998a44-2f70-bfc0-d5bf-40e95cf8940d-d144478d" href="#" className="button-second is-no-fill w-inline-block">
-                                                                <div>.rpm</div>
-                                                            </a>
-                                                        </div>
+                                                        <a href="#" className="button-second w-inline-block">
+                                                            <div>Visit</div>
+                                                        </a>
                                                     </div>
                                                 </div>
                                                 <div className="stroke-rectangle is-white"></div>
@@ -486,12 +473,13 @@ const Home = () => {
                                             <div id="w-node-_19cb7406-6865-9cc6-295c-5e4c36082f17-d144478d" className="anime-stroke-card-wrapper">
                                                 <div id="w-node-_255a96f5-b0a8-fcf0-4223-c10ccec0f82f-d144478d" className="download-card">
                                                     <div className="download-card-top">
-                                                        <div className="icon-wrapper-circle"><img src="images/Key.png" loading="lazy" alt="" className="icon-1x1-32" /></div>
-                                                        <div className="subtitle-18">Download Public Key</div>
+                                                        <div className="icon-wrapper-circle"><img src="images/X-logo.svg" loading="lazy" alt="" className="icon-1x1-32" /></div>
+                                                        <div className="subtitle-18">Updates</div>
+                                                        <div className="text-main-14 text-color-white-60">X (Twitter)</div>
                                                     </div>
                                                     <div className="download-card-bottom">
                                                         <a href="#" className="button-second w-inline-block">
-                                                            <div>Download</div>
+                                                            <div>Visit</div>
                                                         </a>
                                                     </div>
                                                 </div>
@@ -503,14 +491,14 @@ const Home = () => {
                                             <div className="cta-content">
                                                 <div className="h2-center">
                                                     <div className="text-color-white">
-                                                        <h2>Join our SimpleX!</h2>
+                                                        <h2>Join our Telegram!</h2>
                                                     </div>
                                                     <div className="clip is-460">
                                                         <div>Be the first to hear about the latest news, updates and important events in the Liquid Nation ecosystem!</div>
                                                     </div>
                                                 </div>
-                                                <a href="https://smp5.simplex.im/g#-_h6fBWisca6RKhteZtVuXol1a49vFH1Jo-n74fnRK0" className="button w-inline-block">
-                                                    <div>Connect</div>
+                                                <a href="https://t.me/liquidnation" className="button w-inline-block">
+                                                    <div>Join Telegram</div>
                                                 </a>
                                             </div><img src="images/Group-48098168.avif" loading="eager" alt="" className="image-cta-bg" /><img src="images/Group-40275.avif" loading="eager" alt="" className="image-cta-bg is-2" />
                                             <div className="cta-prime-line"></div>

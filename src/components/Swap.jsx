@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import './FormPanel.css';
 
 function TokenSelector({ label, value, amount, onTokenChange, onAmountChange, chainThemes, disabled }) {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -102,7 +103,7 @@ function Swap({ chainThemes }) {
   const exchangeRate = 1.05;
 
   // Calculate toAmount based on fromAmount
-  const toAmount = fromAmount && !isNaN(fromAmount) 
+  const toAmount = fromAmount && !isNaN(fromAmount)
     ? (parseFloat(fromAmount) * exchangeRate).toFixed(4)
     : '';
 
@@ -172,7 +173,7 @@ function Swap({ chainThemes }) {
           onAmountChange={setFromAmount}
           chainThemes={chainThemes}
         />
-        
+
         <div className="swap-action-row">
           <button
             type="button"
@@ -189,7 +190,7 @@ function Swap({ chainThemes }) {
           value={toToken}
           amount={toAmount}
           onTokenChange={setToToken}
-          onAmountChange={() => {}}
+          onAmountChange={() => { }}
           chainThemes={chainThemes}
           disabled={true}
         />

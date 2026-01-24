@@ -123,36 +123,38 @@ const TransactionHistory = () => {
       ) : (
         <div className="tx-list">
           {filteredTxs.map((tx, index) => (
-            <div 
-              key={tx.id || index} 
+            <div
+              key={tx.id || index}
               className={`tx-item ${tx.status} ${tx.isMock ? 'mock' : ''}`}
             >
-              <div className="tx-icon">
-                {getTypeIcon(tx.type)}
-              </div>
-              
-              <div className="tx-details">
-                <div className="tx-main">
-                  <span className="tx-type">{tx.type} Order</span>
-                  <span className="tx-order-id">{tx.orderId}</span>
+              <div className="tx-top-row">
+                <div className="tx-icon">
+                  {getTypeIcon(tx.type)}
                 </div>
-                <div className="tx-meta">
-                  <span className="tx-amount">{tx.amount}</span>
-                  <span className="tx-chain">{tx.chain}</span>
-                  <span className="tx-time">{formatDate(tx.timestamp)}</span>
+
+                <div className="tx-details">
+                  <div className="tx-main">
+                    <span className="tx-type">{tx.type} Order</span>
+                    <span className="tx-order-id">{tx.orderId}</span>
+                  </div>
+                  <div className="tx-meta">
+                    <span className="tx-amount">{tx.amount}</span>
+                    <span className="tx-chain">{tx.chain}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="tx-status-section">
+                <span className="tx-time">{formatDate(tx.timestamp)}</span>
                 <div className={`tx-status ${tx.status}`}>
                   {getStatusIcon(tx.status)}
                   <span>{tx.status}</span>
                 </div>
-                
+
                 {tx.id && (
                   <div className="tx-id">
                     {getExplorerUrl(tx.id, tx.chain) ? (
-                      <a 
+                      <a
                         href={getExplorerUrl(tx.id, tx.chain)}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -177,7 +179,7 @@ const TransactionHistory = () => {
         <div className="mock-notice">
           <span>⚡</span>
           <p>
-            <strong>Bitcoin Testnet4:</strong> All transactions are on the Bitcoin testnet. 
+            <strong>Bitcoin Testnet4:</strong> All transactions are on the Bitcoin testnet.
             Click on any transaction ID to view it on <a href="https://mempool.space/testnet4" target="_blank" rel="noopener noreferrer">mempool.space</a>.
           </p>
         </div>

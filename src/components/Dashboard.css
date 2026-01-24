@@ -1,0 +1,532 @@
+/* Dashboard Styles - Matching Homepage Design System */
+
+/* ===== App Shell ===== */
+.app-shell {
+    min-height: 100vh;
+    background-color: var(--color--black);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== Top Bar ===== */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo-mark {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.logo-mark:hover {
+    opacity: 0.8;
+}
+
+.logo-image {
+    height: 35px;
+    width: auto;
+}
+
+.top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* ===== Top Navigation ===== */
+.top-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.top-nav-item {
+    background: transparent;
+    border: none;
+    padding: 0.5rem 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: Manrope, sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: 100px;
+    transition: all 0.25s ease;
+}
+
+.top-nav-item:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.top-nav-item.active {
+    color: white;
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+}
+
+.wallet-connect-btn {
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+    border: none;
+    border-radius: 100px;
+    padding: 0.75rem 1.5rem;
+    color: white;
+    font-family: Manrope, sans-serif;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.wallet-connect-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(225, 139, 63, 0.35);
+}
+
+/* ===== Main Content ===== */
+.main-content {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* ===== Dashboard Panel ===== */
+.dashboard-panel {
+    background: linear-gradient(180deg, rgba(20, 20, 20, 0.9) 0%, rgba(9, 9, 9, 0.95) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    position: relative;
+}
+
+.dashboard-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(225, 139, 63, 0.3), transparent 50%, rgba(123, 76, 35, 0.3));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dashboard-panel:hover::before {
+    opacity: 1;
+}
+
+/* ===== Panel Header ===== */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.panel-header h1 {
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-cancel-all {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 100px;
+    padding: 0.625rem 1.25rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: Manrope, sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-cancel-all:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-create {
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+    border: none;
+    border-radius: 100px;
+    padding: 0.625rem 1.25rem;
+    color: white;
+    font-family: Manrope, sans-serif;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(225, 139, 63, 0.35);
+}
+
+/* ===== Table ===== */
+.orders-table {
+    width: 100%;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 2fr 0.8fr 0.8fr 0.8fr 1fr;
+    padding: 1rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.table-header span {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 2fr 0.8fr 0.8fr 0.8fr 1fr;
+    padding: 1rem 2rem;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease;
+}
+
+.table-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+/* ===== Profile Cell ===== */
+.dashboard-panel .profile-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.profile-name {
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.btn-cancel-row {
+    background: rgba(255, 100, 100, 0.15);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    color: #ff6b6b;
+    font-family: Manrope, sans-serif;
+    font-weight: 500;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: fit-content;
+}
+
+.btn-cancel-row:hover {
+    background: rgba(255, 100, 100, 0.25);
+    border-color: rgba(255, 100, 100, 0.5);
+}
+
+/* ===== Asset Cell ===== */
+.asset-text {
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ===== Token Badges ===== */
+.chain-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.85rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    white-space: nowrap;
+}
+
+.accepts-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    max-width: 180px;
+}
+
+/* ===== Status Cell - Circular Progress ===== */
+.partial-text {
+    color: white;
+    font-size: 0.875rem;
+}
+
+.status-progress {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: white;
+}
+
+.status-progress-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+}
+
+.status-progress-inner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1a2332;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.status-zero {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.875rem;
+}
+
+.premium-text {
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-state p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1rem;
+    margin: 0.5rem 0;
+}
+
+/* ===== Transaction History ===== */
+.tx-history-panel {
+    margin-top: 2rem;
+    background: linear-gradient(180deg, rgba(20, 20, 20, 0.9) 0%, rgba(9, 9, 9, 0.95) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.5rem 2rem;
+}
+
+.tx-history-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    color: white;
+}
+
+.tx-history-header h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* ===== Bottom Navigation ===== */
+.bottom-nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    bottom: 0;
+}
+
+.nav-item {
+    background: transparent;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: Manrope, sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: 100px;
+    transition: all 0.25s ease;
+}
+
+.nav-item:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+    color: white;
+    background: linear-gradient(135deg, var(--color--prime) 0%, var(--color--prime-second) 100%);
+}
+
+/* ===== Loading State ===== */
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== Pagination ===== */
+.panel-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+}
+
+.pagination button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    color: white;
+    font-family: Manrope, sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.dropdown-menu {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: rgba(20, 20, 20, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu button:hover,
+.dropdown-menu button.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 1.5fr 1fr 1fr 1.5fr 0.6fr 0.6fr 0.6fr 0.8fr;
+        padding: 0.75rem 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    .table-header,
+    .table-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .bottom-nav {
+        flex-wrap: wrap;
+    }
+}

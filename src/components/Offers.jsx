@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useOrders } from '../context/OrderContext';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
+import './Offers.css';
 
 function Avatar({ symbol, color }) {
   return (
@@ -102,21 +103,21 @@ function Offers({ chainThemes, onNavigate }) {
   // Check if an order belongs to the currently connected wallet
   const isUserOrder = (order) => {
     if (!btcAddress && !evmAddress) return false;
-    return (btcAddress && order.btcWallet === btcAddress) || 
-           (evmAddress && order.evmWallet === evmAddress);
+    return (btcAddress && order.btcWallet === btcAddress) ||
+      (evmAddress && order.evmWallet === evmAddress);
   };
 
   const handleDeleteOrder = async (orderId) => {
     // Find the order to check ownership
     const order = orders.find(o => o.orderId === orderId);
     if (!order) return;
-    
+
     // Verify the user owns this order (defensive check - button should be hidden for non-owned orders)
     if (!isUserOrder(order)) {
       console.error(`Unauthorized cancellation attempt for order ${orderId}. Order wallets: BTC=${order.btcWallet}, EVM=${order.evmWallet}. Connected wallets: BTC=${btcAddress}, EVM=${evmAddress}`);
       return;
     }
-    
+
     if (window.confirm('Are you sure you want to cancel this order?')) {
       try {
         await deleteOrder(orderId);
@@ -132,8 +133,8 @@ function Offers({ chainThemes, onNavigate }) {
       <div className="panel-header">
         <h1>Open Offers</h1>
         <div className="create-order-wrapper" ref={menuRef}>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn-create-order"
             onClick={() => setShowCreateMenu(!showCreateMenu)}
             aria-expanded={showCreateMenu}
@@ -223,8 +224,8 @@ function Offers({ chainThemes, onNavigate }) {
         <div className="pagination">
           <div className="per-page">Orders Per Page:</div>
           <div className="dropdown" ref={dropdownRef}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setShowDropdown(!showDropdown)}
               aria-expanded={showDropdown}
               aria-label="Items per page"
@@ -250,16 +251,16 @@ function Offers({ chainThemes, onNavigate }) {
             {totalOrders === 0 ? '0-0 of 0' : `${startIndex + 1}-${endIndex} of ${totalOrders}`}
           </div>
           <div className="pager-arrows">
-            <button 
-              type="button" 
+            <button
+              type="button"
               aria-label="Previous page"
               onClick={handlePreviousPage}
               disabled={currentPage === 1}
             >
               ‹
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               aria-label="Next page"
               onClick={handleNextPage}
               disabled={currentPage >= totalPages}

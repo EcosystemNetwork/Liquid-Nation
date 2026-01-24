@@ -11,8 +11,8 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::db::{self, DbPool, OrderRecord};
-use crate::services::charms::{CharmsService, OrderSpellData, FillSpellData, SpellProveRequest};
 use crate::services::bitcoin::BitcoinService;
+use crate::services::charms::{CharmsService, FillSpellData, OrderSpellData, SpellProveRequest};
 
 /// Application state shared across handlers
 pub struct AppState {
@@ -114,7 +114,7 @@ pub struct CreateOrderResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SpellData {
     pub spell_yaml: String,
-    pub spell_yaml_built: String,  // With variables substituted
+    pub spell_yaml_built: String, // With variables substituted
     pub app_binary: String,
     pub prev_txs: Vec<String>,
 }
@@ -258,8 +258,8 @@ pub async fn list_orders(
             allow_partial: record.allow_partial,
             filled_amount: record.filled_amount.unwrap_or_else(|| "0".to_string()),
             expiry_height: record.expiry_height.unwrap_or(0) as u64,
-            created_at: record.created_at.to_rfc3339(),
-            updated_at: record.updated_at.to_rfc3339(),
+            created_at: record.created_at.and_utc().to_rfc3339(),
+            updated_at: record.updated_at.and_utc().to_rfc3339(),
             utxo_id: record.utxo_id,
         })
         .collect();
@@ -283,32 +283,30 @@ pub async fn get_order(
 ) -> Json<Option<Order>> {
     // Fetch from database
     match db::get_order_by_id(&state.db, &id).await {
-        Ok(Some(record)) => {
-            Json(Some(Order {
-                id: record.id,
-                maker_address: record.maker_address,
-                offer_token: record.offer_token,
-                offer_amount: record.offer_amount,
-                want_token: record.want_token,
-                want_amount: record.want_amount,
-                source_chain: record.source_chain,
-                dest_chain: record.dest_chain,
-                status: match record.status.as_str() {
-                    "open" => OrderStatus::Open,
-                    "filled" => OrderStatus::Filled,
-                    "cancelled" => OrderStatus::Cancelled,
-                    "expired" => OrderStatus::Expired,
-                    "partiallyfilled" => OrderStatus::PartiallyFilled,
-                    _ => OrderStatus::PendingSignature,
-                },
-                allow_partial: record.allow_partial,
-                filled_amount: record.filled_amount.unwrap_or_else(|| "0".to_string()),
-                expiry_height: record.expiry_height.unwrap_or(0) as u64,
-                created_at: record.created_at.to_rfc3339(),
-                updated_at: record.updated_at.to_rfc3339(),
-                utxo_id: record.utxo_id,
-            }))
-        }
+        Ok(Some(record)) => Json(Some(Order {
+            id: record.id,
+            maker_address: record.maker_address,
+            offer_token: record.offer_token,
+            offer_amount: record.offer_amount,
+            want_token: record.want_token,
+            want_amount: record.want_amount,
+            source_chain: record.source_chain,
+            dest_chain: record.dest_chain,
+            status: match record.status.as_str() {
+                "open" => OrderStatus::Open,
+                "filled" => OrderStatus::Filled,
+                "cancelled" => OrderStatus::Cancelled,
+                "expired" => OrderStatus::Expired,
+                "partiallyfilled" => OrderStatus::PartiallyFilled,
+                _ => OrderStatus::PendingSignature,
+            },
+            allow_partial: record.allow_partial,
+            filled_amount: record.filled_amount.unwrap_or_else(|| "0".to_string()),
+            expiry_height: record.expiry_height.unwrap_or(0) as u64,
+            created_at: record.created_at.and_utc().to_rfc3339(),
+            updated_at: record.updated_at.and_utc().to_rfc3339(),
+            utxo_id: record.utxo_id,
+        })),
         Ok(None) => Json(None),
         Err(e) => {
             tracing::error!("Failed to fetch order {}: {}", id, e);
@@ -323,34 +321,40 @@ pub async fn create_order(
     Json(req): Json<CreateOrderRequest>,
 ) -> Json<CreateOrderResponse> {
     let order_id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now();
-    
+    let now = chrono::Utc::now().naive_utc();
+
     // Validate funding UTXO
     if req.funding_utxo.is_empty() || req.funding_utxo == "pending" {
-        tracing::warn!("Invalid funding UTXO: {}. Using mock mode.", req.funding_utxo);
+        tracing::warn!(
+            "Invalid funding UTXO: {}. Using mock mode.",
+            req.funding_utxo
+        );
         // In real mode, we need a valid UTXO. For now, fall back to mock mode
         // TODO: Get actual UTXO from wallet
     }
-    
+
     // Get current block height for expiry calculation
     let current_height = match state.bitcoin.get_blockchain_info().await {
         Ok(info) => info.blocks,
         Err(_) => 850000, // Fallback
     };
-    
+
     let expiry_height = current_height + req.expiry_blocks;
-    
+
     // Normalize chains
     let source_chain = normalize_chain(&req.source_chain);
     let dest_chain = normalize_chain(&req.dest_chain);
-    
+
     // Generate escrow address (in production, this would be derived from the contract)
     let escrow_address = format!("tb1q_escrow_{}", &order_id[..8]);
-    
+
     // Prepare spell data
     let order_spell_data = OrderSpellData {
         maker_address: req.maker_address.clone(),
-        maker_pubkey: req.maker_pubkey.clone().unwrap_or_else(|| req.maker_address.clone()),
+        maker_pubkey: req
+            .maker_pubkey
+            .clone()
+            .unwrap_or_else(|| req.maker_address.clone()),
         offer_token_id: DEFAULT_TOKEN_ID.to_string(),
         offer_token_vk: DEFAULT_TOKEN_VK.to_string(),
         offer_amount: req.offer_amount.clone(),
@@ -361,40 +365,46 @@ pub async fn create_order(
         funding_utxo: req.funding_utxo.clone(),
         escrow_address: escrow_address.clone(),
         dest_chain: chain_to_id(&dest_chain),
-        dest_address: req.dest_address.clone().unwrap_or_else(|| req.maker_address.clone()),
+        dest_address: req
+            .dest_address
+            .clone()
+            .unwrap_or_else(|| req.maker_address.clone()),
     };
-    
+
     // Build the spell with variables substituted
-    let spell_built = state.charms.build_create_order_spell(
-        CREATE_ORDER_SPELL,
-        &order_spell_data,
-        DEFAULT_APP_ID,
-        DEFAULT_APP_VK,
-    ).unwrap_or_else(|e| {
-        tracing::error!("Failed to build spell: {}", e);
-        CREATE_ORDER_SPELL.to_string()
-    });
-    
+    let spell_built = state
+        .charms
+        .build_create_order_spell(
+            CREATE_ORDER_SPELL,
+            &order_spell_data,
+            DEFAULT_APP_ID,
+            DEFAULT_APP_VK,
+        )
+        .unwrap_or_else(|e| {
+            tracing::error!("Failed to build spell: {}", e);
+            CREATE_ORDER_SPELL.to_string()
+        });
+
     // Validate the spell
     if let Err(e) = state.charms.validate_spell(&spell_built) {
         tracing::warn!("Spell validation warning: {}", e);
     }
-    
+
     // Call the Charms Prover API
     let proved_txs = if !state.charms.is_mock_mode() {
         // Load app binary if path is set
         let mut binaries = std::collections::BTreeMap::new();
         if let Ok(binary_path) = std::env::var("SWAP_APP_BINARY_PATH") {
             if let Ok(binary_data) = tokio::fs::read(&binary_path).await {
-                let app_vk = std::env::var("SWAP_APP_VK")
-                    .unwrap_or_else(|_| DEFAULT_APP_VK.to_string());
+                let app_vk =
+                    std::env::var("SWAP_APP_VK").unwrap_or_else(|_| DEFAULT_APP_VK.to_string());
                 binaries.insert(app_vk, binary_data);
                 tracing::info!("Loaded app binary from: {}", binary_path);
             } else {
                 tracing::warn!("Failed to load app binary from: {}", binary_path);
             }
         }
-        
+
         let prove_request = SpellProveRequest {
             spell: spell_built.clone(),
             binaries,
@@ -405,7 +415,7 @@ pub async fn create_order(
             fee_rate: 10.0,
             chain: "testnet4".to_string(),
         };
-        
+
         match state.charms.prove_spell(prove_request).await {
             Ok(txs) => {
                 if txs.is_empty() {
@@ -435,22 +445,21 @@ pub async fn create_order(
             txid: format!("mock_{}", order_id),
         }]
     };
-    
+
     // Create unsigned transactions for signing
-    let unsigned_txs: Vec<UnsignedTransaction> = proved_txs.iter().map(|tx| {
-        UnsignedTransaction {
+    let unsigned_txs: Vec<UnsignedTransaction> = proved_txs
+        .iter()
+        .map(|tx| UnsignedTransaction {
             hex: tx.hex.clone(),
             txid: tx.txid.clone(),
-            inputs_to_sign: vec![
-                InputToSign {
-                    index: 0,
-                    address: req.maker_address.clone(),
-                    sighash_type: "SIGHASH_DEFAULT".to_string(),
-                }
-            ],
-        }
-    }).collect();
-    
+            inputs_to_sign: vec![InputToSign {
+                index: 0,
+                address: req.maker_address.clone(),
+                sighash_type: "SIGHASH_DEFAULT".to_string(),
+            }],
+        })
+        .collect();
+
     // Create the order record
     let order = Order {
         id: order_id.clone(),
@@ -465,8 +474,8 @@ pub async fn create_order(
         allow_partial: req.allow_partial,
         filled_amount: "0".to_string(),
         expiry_height,
-        created_at: now.to_rfc3339(),
-        updated_at: now.to_rfc3339(),
+        created_at: now.and_utc().to_rfc3339(),
+        updated_at: now.and_utc().to_rfc3339(),
         utxo_id: Some(req.funding_utxo.clone()),
     };
 
@@ -495,7 +504,15 @@ pub async fn create_order(
     } else {
         tracing::info!("Order {} saved to database", order_id);
     }
-    
+
+    tracing::info!(
+        "Returning create order response with {} unsigned transactions",
+        unsigned_txs.len()
+    );
+    if let Some(first_tx) = unsigned_txs.first() {
+        tracing::info!("First unsigned tx: txid={}", first_tx.txid);
+    }
+
     Json(CreateOrderResponse {
         order,
         spell: SpellData {
@@ -524,7 +541,7 @@ pub async fn fill_order(
     Json(req): Json<FillOrderRequest>,
 ) -> Json<FillOrderResponse> {
     let now = chrono::Utc::now();
-    
+
     // TODO: Lookup order from database
     let existing_order = Order {
         id: id.clone(),
@@ -543,7 +560,7 @@ pub async fn fill_order(
         updated_at: now.to_rfc3339(),
         utxo_id: Some("abc123:0".to_string()),
     };
-    
+
     // Prepare fill spell data
     let order_spell_data = OrderSpellData {
         maker_address: existing_order.maker_address.clone(),
@@ -560,45 +577,47 @@ pub async fn fill_order(
         dest_chain: chain_to_id(&existing_order.dest_chain),
         dest_address: existing_order.maker_address.clone(),
     };
-    
+
     let fill_spell_data = FillSpellData {
         order_utxo: existing_order.utxo_id.clone().unwrap_or_default(),
         taker_utxo: req.taker_utxo.clone(),
-        taker_pubkey: req.taker_pubkey.clone().unwrap_or_else(|| req.taker_address.clone()),
+        taker_pubkey: req
+            .taker_pubkey
+            .clone()
+            .unwrap_or_else(|| req.taker_address.clone()),
         taker_address: req.taker_address.clone(),
         maker_address: existing_order.maker_address.clone(),
         offer_amount: existing_order.offer_amount.clone(),
         want_amount: existing_order.want_amount.clone(),
         fill_amount: req.fill_amount.clone(),
     };
-    
+
     // Build the fill spell
-    let spell_built = state.charms.build_fill_order_spell(
-        FILL_ORDER_SPELL,
-        &fill_spell_data,
-        &order_spell_data,
-        DEFAULT_APP_ID,
-        DEFAULT_APP_VK,
-    ).unwrap_or_else(|e| {
-        tracing::error!("Failed to build fill spell: {}", e);
-        FILL_ORDER_SPELL.to_string()
-    });
-    
+    let spell_built = state
+        .charms
+        .build_fill_order_spell(
+            FILL_ORDER_SPELL,
+            &fill_spell_data,
+            &order_spell_data,
+            DEFAULT_APP_ID,
+            DEFAULT_APP_VK,
+        )
+        .unwrap_or_else(|e| {
+            tracing::error!("Failed to build fill spell: {}", e);
+            FILL_ORDER_SPELL.to_string()
+        });
+
     // Call prover (mock for now)
-    let unsigned_txs = vec![
-        UnsignedTransaction {
-            hex: "0200000001...mock_fill...".to_string(),
-            txid: format!("mock_fill_{}", id),
-            inputs_to_sign: vec![
-                InputToSign {
-                    index: 0,
-                    address: req.taker_address.clone(),
-                    sighash_type: "SIGHASH_DEFAULT".to_string(),
-                }
-            ],
-        }
-    ];
-    
+    let unsigned_txs = vec![UnsignedTransaction {
+        hex: "0200000001...mock_fill...".to_string(),
+        txid: format!("mock_fill_{}", id),
+        inputs_to_sign: vec![InputToSign {
+            index: 0,
+            address: req.taker_address.clone(),
+            sighash_type: "SIGHASH_DEFAULT".to_string(),
+        }],
+    }];
+
     let order = Order {
         id: id.clone(),
         maker_address: existing_order.maker_address,
@@ -644,29 +663,25 @@ pub async fn cancel_order(
     Path(id): Path<String>,
 ) -> Json<FillOrderResponse> {
     let now = chrono::Utc::now();
-    
+
     // Update order status to cancelled in database
     if let Err(e) = db::update_order_status(&state.db, &id, "cancelled").await {
         tracing::error!("Failed to update order status: {}", e);
     }
-    
+
     // Build cancel spell
     let spell_built = CANCEL_ORDER_SPELL.to_string();
-    
-    let unsigned_txs = vec![
-        UnsignedTransaction {
-            hex: "0200000001...mock_cancel...".to_string(),
-            txid: format!("mock_cancel_{}", id),
-            inputs_to_sign: vec![
-                InputToSign {
-                    index: 0,
-                    address: "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx".to_string(),
-                    sighash_type: "SIGHASH_DEFAULT".to_string(),
-                }
-            ],
-        }
-    ];
-    
+
+    let unsigned_txs = vec![UnsignedTransaction {
+        hex: "0200000001...mock_cancel...".to_string(),
+        txid: format!("mock_cancel_{}", id),
+        inputs_to_sign: vec![InputToSign {
+            index: 0,
+            address: "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx".to_string(),
+            sighash_type: "SIGHASH_DEFAULT".to_string(),
+        }],
+    }];
+
     Json(FillOrderResponse {
         order: Order {
             id: id.clone(),
@@ -711,24 +726,20 @@ pub async fn partial_fill_order(
 ) -> Json<FillOrderResponse> {
     let fill_amount = req.fill_amount.clone().unwrap_or("500".to_string());
     let now = chrono::Utc::now();
-    
+
     // Build partial fill spell
     let spell_built = PARTIAL_FILL_SPELL.to_string();
-    
-    let unsigned_txs = vec![
-        UnsignedTransaction {
-            hex: "0200000001...mock_partial...".to_string(),
-            txid: format!("mock_partial_{}", id),
-            inputs_to_sign: vec![
-                InputToSign {
-                    index: 0,
-                    address: req.taker_address.clone(),
-                    sighash_type: "SIGHASH_DEFAULT".to_string(),
-                }
-            ],
-        }
-    ];
-    
+
+    let unsigned_txs = vec![UnsignedTransaction {
+        hex: "0200000001...mock_partial...".to_string(),
+        txid: format!("mock_partial_{}", id),
+        inputs_to_sign: vec![InputToSign {
+            index: 0,
+            address: req.taker_address.clone(),
+            sighash_type: "SIGHASH_DEFAULT".to_string(),
+        }],
+    }];
+
     Json(FillOrderResponse {
         order: Order {
             id: id.clone(),
@@ -773,17 +784,17 @@ pub async fn broadcast_order(
     Json(req): Json<BroadcastRequest>,
 ) -> Json<BroadcastResponse> {
     tracing::info!("Broadcasting transaction for order {}", id);
-    
+
     // Check if we're in mock mode (transaction hex starts with mock indicator)
-    let is_mock = req.signed_tx_hex.contains("mock") 
-        || req.signed_tx_hex.len() < 100 
+    let is_mock = req.signed_tx_hex.contains("mock")
+        || req.signed_tx_hex.len() < 100
         || state.charms.is_mock_mode();
-    
+
     if is_mock {
         // In mock mode, simulate successful broadcast
         let mock_txid = format!("mock_broadcast_{}", uuid::Uuid::new_v4());
         tracing::info!("Mock mode: simulating broadcast with txid {}", mock_txid);
-        
+
         // Update order status in database
         if let Err(e) = db::update_order_status(&state.db, &id, "open").await {
             tracing::error!("Failed to update order status: {}", e);
@@ -791,19 +802,19 @@ pub async fn broadcast_order(
         if let Err(e) = db::update_order_tx_id(&state.db, &id, &mock_txid).await {
             tracing::error!("Failed to update order tx_id: {}", e);
         }
-        
+
         return Json(BroadcastResponse {
             txid: mock_txid,
             status: "confirmed".to_string(),
             message: "Transaction simulated successfully (mock mode). In production, tokens would be locked in escrow.".to_string(),
         });
     }
-    
+
     // Send to Bitcoin network (real mode)
     match state.bitcoin.send_raw_transaction(&req.signed_tx_hex).await {
         Ok(txid) => {
             tracing::info!("Transaction broadcast successful: {}", txid);
-            
+
             // Update order status in database
             if let Err(e) = db::update_order_status(&state.db, &id, "open").await {
                 tracing::error!("Failed to update order status: {}", e);
@@ -811,16 +822,17 @@ pub async fn broadcast_order(
             if let Err(e) = db::update_order_tx_id(&state.db, &id, &txid).await {
                 tracing::error!("Failed to update order tx_id: {}", e);
             }
-            
+
             Json(BroadcastResponse {
                 txid,
                 status: "confirmed".to_string(),
-                message: "Transaction broadcast successfully. Tokens are now locked in escrow.".to_string(),
+                message: "Transaction broadcast successfully. Tokens are now locked in escrow."
+                    .to_string(),
             })
         }
         Err(e) => {
             tracing::error!("Broadcast failed: {}", e);
-            
+
             Json(BroadcastResponse {
                 txid: "".to_string(),
                 status: "failed".to_string(),

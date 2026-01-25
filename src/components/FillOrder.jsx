@@ -25,7 +25,9 @@ const OrderStatus = {
 
 const getStatusLabel = (status) => {
   switch (status?.toLowerCase()) {
-    case 'active': return 'Active';
+    case 'active':
+    case 'open':
+      return 'Active';
     case 'pendingsignature': return 'Pending Signature';
     case 'pending': return 'Pending';
     case 'partiallyfilled': return 'Partially Filled';
@@ -38,7 +40,9 @@ const getStatusLabel = (status) => {
 
 const getStatusClass = (status) => {
   switch (status?.toLowerCase()) {
-    case 'active': return 'status-active';
+    case 'active':
+    case 'open':
+      return 'status-active';
     case 'pendingsignature': 
     case 'pending': return 'status-pending';
     case 'partiallyfilled': return 'status-partial';
@@ -70,6 +74,22 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
   const [unsignedTx, setUnsignedTx] = useState(null);
   const [signedTxHex, setSignedTxHex] = useState('');
 
+  const normalizeStatus = useCallback((targetOrder) => {
+    if (!targetOrder) return 'unknown';
+    if (typeof targetOrder.status === 'string') {
+      return targetOrder.status === 'open' ? 'active' : targetOrder.status;
+    }
+    if (typeof targetOrder.rawStatus === 'string') {
+      return targetOrder.rawStatus === 'open' ? 'active' : targetOrder.rawStatus;
+    }
+    if (typeof targetOrder.status === 'number') {
+      if (targetOrder.status >= 100) return 'filled';
+      if (targetOrder.status > 0) return 'partiallyfilled';
+      return 'active';
+    }
+    return 'unknown';
+  }, []);
+
   // Load order data
   useEffect(() => {
     const loadOrder = async () => {
@@ -78,7 +98,7 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
         setError(null);
         
         // First check local orders
-        const localOrder = orders.find(o => o.orderId === orderId);
+        const localOrder = orders.find(o => o.orderId === orderId || o.id === orderId);
         if (localOrder) {
           setOrder(localOrder);
           setLoading(false);
@@ -86,6 +106,11 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
         }
         
         // If not found locally, fetch from API
+        if (orderId?.startsWith?.('#')) {
+          setLoading(false);
+          return;
+        }
+
         const apiOrder = await api.getOrder(orderId);
         if (apiOrder) {
           setOrder({
@@ -125,10 +150,22 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
   const calculateFillAmounts = useCallback(() => {
     if (!order) return { receiveAmount: '0', sendAmount: '0' };
     
-    const offerAmount = parseFloat(order.offerAmount || order._apiOrder?.offer_amount || '0');
-    const wantAmount = parseFloat(order.wantAmount || order._apiOrder?.want_amount || '0');
-    const filledAmount = parseFloat(order.filledAmount || '0');
-    const remainingAmount = offerAmount - filledAmount;
+    const parseAmount = (value) => {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const offerFromAsset = order.asset ? order.asset.split(' ')[0] : '';
+    const wantFromPremium = order.premium ? order.premium.split(' ')[0] : '';
+
+    const offerAmount = parseAmount(
+      order.offerAmount || order._apiOrder?.offer_amount || offerFromAsset
+    );
+    const wantAmount = parseAmount(
+      order.wantAmount || order._apiOrder?.want_amount || wantFromPremium
+    );
+    const filledAmount = parseAmount(order.filledAmount);
+    const remainingAmount = Math.max(offerAmount - filledAmount, 0);
     
     const fillFraction = fillPercent / 100;
     const receiveAmount = remainingAmount * fillFraction;
@@ -137,11 +174,13 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
     return {
       receiveAmount: receiveAmount.toFixed(8),
       sendAmount: sendAmount.toFixed(8),
-      remainingPercent: ((remainingAmount / offerAmount) * 100).toFixed(1),
+      remainingPercent: offerAmount > 0 ? ((remainingAmount / offerAmount) * 100).toFixed(1) : '0.0',
     };
   }, [order, fillPercent]);
 
   const { receiveAmount, sendAmount, remainingPercent } = calculateFillAmounts();
+  const statusValue = normalizeStatus(order);
+  const apiOrderId = order?.id || order?._apiOrder?.id || null;
 
   // Handle approve token (for ERC20 tokens)
   const handleApprove = async () => {
@@ -172,8 +211,12 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
         throw new Error('Please connect a wallet first');
       }
 
+      if (!apiOrderId || apiOrderId.startsWith?.('#')) {
+        throw new Error('Order is missing a backend id. Please refresh orders.');
+      }
+
       // Call the fill order API
-      const response = await api.fillOrder(orderId, {
+      const response = await api.fillOrder(apiOrderId, {
         taker_address: takerAddress,
         fill_amount: sendAmount,
         fill_percent: fillPercent,
@@ -212,8 +255,8 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
       
       if (isMock) {
         // Simulate signing for mock transactions
-        setSignedTxHex(`signed_mock_${unsignedTx.txid}`);
-        await handleBroadcast(`signed_mock_${unsignedTx.txid}`);
+        setSignedTxHex(unsignedTx.hex);
+        await handleBroadcast(unsignedTx.hex);
       } else if (btcConnected && signPsbt) {
         // Sign with wallet
         const signed = await signPsbt(unsignedTx.hex, {
@@ -236,7 +279,12 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
   // Handle broadcast
   const handleBroadcast = async (signedHex) => {
     try {
-      const result = await api.broadcastOrder(orderId, signedHex);
+      const targetId = apiOrderId || orderId;
+      if (!targetId || targetId.startsWith?.('#')) {
+        throw new Error('Order is missing a backend id. Please refresh orders.');
+      }
+
+      const result = await api.broadcastOrder(targetId, signedHex);
       setFillResult({
         success: true,
         txid: result.txid,
@@ -322,7 +370,7 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
   }
 
   const theme = chainThemes?.[order.chain] || chainThemes?.BTC || { background: '#f7931a', textColor: '#000' };
-  const canFill = order.status?.toLowerCase() === 'active' || order.status?.toLowerCase() === 'partiallyfilled';
+  const canFill = statusValue === 'active' || statusValue === 'partiallyfilled';
   
   // Check if current user is the maker of this order
   const isOwnOrder = (btcAddress && (order.makerAddress === btcAddress || order.btcWallet === btcAddress)) ||
@@ -351,18 +399,18 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
       <div className="status-card">
         <div className="status-header">
           <span>Order Status</span>
-          <span className={`status-badge ${getStatusClass(order.status)}`}>
-            {getStatusLabel(order.status)}
+          <span className={`status-badge ${getStatusClass(statusValue)}`}>
+            {getStatusLabel(statusValue)}
           </span>
         </div>
         <div className="status-bar">
           <div 
             className="status-fill"
-            style={{ width: `${100 - parseFloat(remainingPercent)}%` }}
+            style={{ width: `${100 - parseFloat(remainingPercent || 0)}%` }}
           />
         </div>
         <div className="status-text">
-          {remainingPercent}% remaining
+          {remainingPercent || '0.0'}% remaining
         </div>
       </div>
 

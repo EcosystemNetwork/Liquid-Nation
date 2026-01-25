@@ -6,6 +6,8 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001/api';
+const PROVER_API_URL = import.meta.env.VITE_PROVER_API_URL || 'https://v8.charms.dev/spells/prove';
+const USE_PROVER_DIRECT = import.meta.env.VITE_USE_PROVER_DIRECT === 'true';
 
 /**
  * Generic API request handler
@@ -38,6 +40,36 @@ async function apiRequest(endpoint, options = {}) {
     console.error(`API Error (${endpoint}):`, error);
     throw error;
   }
+}
+
+async function proveSpellDirect(spellData) {
+  const requestBody = {
+    spell: spellData.spellJson || spellData.spell,
+    binaries: spellData.binaries || {},
+    prev_txs: spellData.prevTxs || [],
+    funding_utxo: spellData.fundingUtxo,
+    funding_utxo_value: spellData.fundingUtxoValue,
+    change_address: spellData.changeAddress,
+    fee_rate: spellData.feeRate,
+    chain: spellData.chain || 'testnet4',
+  };
+
+  if (!requestBody.spell) {
+    throw new Error('spellJson is required for direct prover calls.');
+  }
+
+  const response = await fetch(PROVER_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(error.message || `Prover API Error: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 // ============================================
@@ -239,6 +271,10 @@ export async function getNewAddress() {
  * @param {number} spellData.feeRate - Fee rate in sat/vB
  */
 export async function proveSpell(spellData) {
+  if (USE_PROVER_DIRECT && (spellData.spellJson || spellData.spell)) {
+    return proveSpellDirect(spellData);
+  }
+
   return apiRequest('/spells/prove', {
     method: 'POST',
     body: JSON.stringify({
@@ -473,6 +509,7 @@ export default {
 
   // Spells
   proveSpell,
+  proveSpellDirect,
   broadcastTransactions,
   getTransactionStatus,
 

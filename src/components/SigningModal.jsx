@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { broadcastOrder } from '../services/api';
+import { broadcastOrder, checkHealth } from '../services/api';
 import './SigningModal.css';
 
 const SigningModal = ({
@@ -25,16 +25,15 @@ const SigningModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [txResult, setTxResult] = useState(null);
+  const [proverElapsed, setProverElapsed] = useState(0);
+  const [proverStatus, setProverStatus] = useState({
+    reachable: null,
+    url: '',
+    latencyMs: null,
+  });
 
   const wallet = useWallet();
   const { connected, signPsbt, address } = wallet || {};
-
-  // Check if this is a mock transaction (contains "mock" in hex or txid)
-  const isMockTransaction = unsignedTxs.length > 0 && (
-    unsignedTxs[0]?.hex?.includes('mock') ||
-    unsignedTxs[0]?.txid?.includes('mock') ||
-    unsignedTxs[0]?.hex?.length < 100
-  );
 
   // Check if the hex is a valid PSBT (starts with "cHNidP" in base64 or "70736274" in hex)
   const isPsbtFormat = unsignedTxs.length > 0 && (
@@ -43,7 +42,7 @@ const SigningModal = ({
   );
 
   // Charms transactions are ZK-proved raw transactions, not PSBTs
-  const isCharmsTransaction = unsignedTxs.length > 0 && !isPsbtFormat && !isMockTransaction;
+  const isCharmsTransaction = unsignedTxs.length > 0 && !isPsbtFormat;
 
   // Reset state when modal opens
   useEffect(() => {
@@ -57,8 +56,57 @@ const SigningModal = ({
       setSignedTxHex('');
       setError(null);
       setTxResult(null);
+      setProverElapsed(0);
     }
   }, [isOpen, unsignedTxs, orderId, signingInstructions]);
+
+  useEffect(() => {
+    if (!isOpen) return () => {};
+    if (unsignedTxs.length > 0) {
+      setProverElapsed(0);
+      return () => {};
+    }
+
+    const start = Date.now();
+    const interval = setInterval(() => {
+      setProverElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, unsignedTxs.length]);
+
+  useEffect(() => {
+    if (!isOpen) return () => {};
+
+    let active = true;
+
+    const loadProverStatus = async () => {
+      try {
+        const health = await checkHealth();
+        if (!active) return;
+        setProverStatus({
+          reachable: !!health?.prover_api?.reachable,
+          url: health?.prover_api?.url || '',
+          latencyMs: health?.prover_api?.latency_ms ?? null,
+        });
+      } catch (err) {
+        if (!active) return;
+        setProverStatus({
+          reachable: false,
+          url: '',
+          latencyMs: null,
+        });
+      }
+    };
+
+    loadProverStatus();
+    const interval = setInterval(loadProverStatus, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isOpen]);
 
   // Log wallet status for debugging
   useEffect(() => {
@@ -75,7 +123,6 @@ const SigningModal = ({
     console.log('handleSign called:', {
       connected,
       hasSignPsbt: !!signPsbt,
-      isMockTransaction,
       isPsbtFormat,
       isCharmsTransaction
     });
@@ -91,15 +138,7 @@ const SigningModal = ({
     try {
       const unsignedTx = unsignedTxs[0];
 
-      // Case 1: Mock transactions - simulate signing
-      if (isMockTransaction) {
-        console.log('Mock transaction - simulating signature');
-        setSignedTxHex(unsignedTx.hex || '');
-        setStep(2);
-        return;
-      }
-
-      // Case 2: Charms ZK-proved transactions - no wallet signing needed
+      // Case 1: Charms ZK-proved transactions - no wallet signing needed
       // These transactions are already proved with ZK proofs and just need to be broadcast
       if (isCharmsTransaction) {
         console.log('Charms ZK-proved transaction - ready for broadcast');
@@ -110,7 +149,7 @@ const SigningModal = ({
         return;
       }
 
-      // Case 3: PSBT format - use wallet signing
+      // Case 2: PSBT format - use wallet signing
       if (isPsbtFormat && connected && typeof signPsbt === 'function') {
         console.log('PSBT format detected - using wallet signPsbt');
         try {
@@ -143,12 +182,23 @@ const SigningModal = ({
     } finally {
       setIsLoading(false);
     }
-  }, [connected, signPsbt, unsignedTxs, isMockTransaction, isPsbtFormat, isCharmsTransaction]);
+  }, [connected, signPsbt, unsignedTxs, isPsbtFormat, isCharmsTransaction]);
 
   // Broadcast the signed transaction
   const handleBroadcast = useCallback(async () => {
     if (!signedTxHex) {
       setError('No signed transaction to broadcast');
+      return;
+    }
+
+    if (signedTxHex.startsWith('cHNidP') || signedTxHex.startsWith('70736274')) {
+      setError('PSBT detected. Please finalize to a raw transaction hex before broadcasting.');
+      return;
+    }
+
+    // Validate transaction hex - must be a proper hex string with sufficient length
+    if (signedTxHex.length < 100 || !/^[0-9a-fA-F]+$/.test(signedTxHex)) {
+      setError('Invalid transaction format. The prover may not have generated a valid transaction.');
       return;
     }
 
@@ -242,12 +292,13 @@ const SigningModal = ({
               </p>
             </div>
 
-            {isMockTransaction && (
-              <div className="mock-banner">
-                <span>🧪</span>
-                <p><strong>Mock Mode:</strong> This is a simulated transaction. No real Bitcoin will be sent.</p>
-              </div>
-            )}
+            <div className="prover-status">
+              <span className={`prover-dot ${proverStatus.reachable ? 'online' : 'offline'}`} />
+              <span>
+                Charms prover: {proverStatus.reachable ? 'Running' : 'Unavailable'}
+                {proverStatus.latencyMs != null ? ` (${proverStatus.latencyMs}ms)` : ''}
+              </span>
+            </div>
 
             {isCharmsTransaction && (
               <div className="charms-banner" style={{ background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(75, 0, 130, 0.1))', border: '1px solid rgba(138, 43, 226, 0.3)', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -275,11 +326,19 @@ const SigningModal = ({
                 )}
               </div>
             ) : (
-              <div className="no-tx">
-                <p>No transaction data available</p>
-                <p className="tx-debug" style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
-                  Debug: unsignedTxs = {JSON.stringify(unsignedTxs)}
+              <div className="no-tx prover-progress">
+                <div className="prover-progress-header">
+                  <span className="prover-spinner" aria-hidden="true" />
+                  <p className="prover-title">Prover Not Ready</p>
+                </div>
+                <p className="prover-message">
+                  The ZK prover is generating your transaction. This may take a moment.
+                  Make sure <code>charms server</code> is running locally.
                 </p>
+                <div className="prover-bar" role="progressbar" aria-valuetext="Proving in progress">
+                  <div className="prover-bar-fill" />
+                </div>
+                <p className="prover-elapsed">Elapsed: {proverElapsed}s</p>
               </div>
             )}
 
@@ -304,14 +363,6 @@ const SigningModal = ({
                   disabled={isLoading || unsignedTxs.length === 0}
                 >
                   {isLoading ? '⏳ Processing...' : '✨ Proceed to Broadcast'}
-                </button>
-              ) : isMockTransaction ? (
-                <button
-                  className="btn-primary"
-                  onClick={handleSign}
-                  disabled={isLoading || unsignedTxs.length === 0}
-                >
-                  {isLoading ? '⏳ Simulating...' : '🧪 Simulate Signature (Mock)'}
                 </button>
               ) : connected ? (
                 <button

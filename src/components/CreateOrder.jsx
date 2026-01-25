@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOrders } from '../context/OrderContext';
 import { useWallet } from '../context/WalletContext';
 import { useEVMWallet } from '../context/EVMWalletContext';
+import { ccipChainKeys } from '../data/ccipChains';
 import './FormPanel.css';
 
 function CreateOrder({ chainThemes, onNavigate }) {
@@ -32,7 +33,10 @@ function CreateOrder({ chainThemes, onNavigate }) {
   const effectiveBtcAddress = manualBtcAddress || btcAddress;
   const effectiveEvmAddress = manualEvmAddress || evmAddress;
 
-  const chains = Object.keys(chainThemes);
+  const chains = ['BTC', ...ccipChainKeys].filter(
+    (chainKey, index, allKeys) =>
+      chainThemes[chainKey] && allKeys.indexOf(chainKey) === index
+  );
   const availableAssets = chains;
 
   useEffect(() => {

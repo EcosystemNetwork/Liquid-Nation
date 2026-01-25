@@ -20,8 +20,7 @@ System health check with Prover API status.
     "reachable": true,
     "latency_ms": 1293,
     "error": null
-  },
-  "mock_mode": true
+  }
 }
 ```
 

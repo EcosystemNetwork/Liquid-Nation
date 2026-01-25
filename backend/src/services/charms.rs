@@ -10,7 +10,6 @@ use std::collections::BTreeMap;
 /// Charms prover service
 pub struct CharmsService {
     api_url: String,
-    mock_mode: bool,
 }
 
 /// Spell prove request - sent to Charms Prover API
@@ -80,15 +79,12 @@ pub struct FillSpellData {
 
 impl CharmsService {
     /// Create a new Charms service
+    /// Uses local prover by default (http://localhost:17784/spells/prove)
+    /// Set CHARMS_PROVE_API_URL env var to override
     pub fn new() -> Self {
         let api_url = std::env::var("CHARMS_PROVE_API_URL")
-            .unwrap_or_else(|_| "https://v8.charms.dev/spells/prove".to_string());
-        
-        let mock_mode = std::env::var("MOCK_MODE")
-            .map(|v| v == "true")
-            .unwrap_or(true);
-
-        Self { api_url, mock_mode }
+            .unwrap_or_else(|_| "http://localhost:17784/spells/prove".to_string());
+        Self { api_url }
     }
 
     /// Build a spell from template with variable substitution
@@ -196,17 +192,6 @@ impl CharmsService {
         &self,
         request: SpellProveRequest,
     ) -> Result<Vec<ProvedTransaction>> {
-        if self.mock_mode {
-            tracing::info!("Mock mode: returning simulated transaction");
-            // Return mock transactions for development
-            return Ok(vec![
-                ProvedTransaction {
-                    hex: self.generate_mock_tx_hex(),
-                    txid: format!("mock_{}", uuid::Uuid::new_v4()),
-                },
-            ]);
-        }
-
         tracing::info!("Calling Charms Prover API at {}", self.api_url);
         
         let client = reqwest::Client::builder()
@@ -228,21 +213,6 @@ impl CharmsService {
         let txs: Vec<ProvedTransaction> = response.json().await?;
         tracing::info!("Received {} transactions from prover", txs.len());
         Ok(txs)
-    }
-
-    /// Generate a mock transaction hex for testing
-    fn generate_mock_tx_hex(&self) -> String {
-        // This is a valid-looking but fake transaction structure
-        // Version (4 bytes) + Input count (1 byte) + ... simplified
-        "0200000001".to_string() + 
-        &"00".repeat(32) +  // Prev txid
-        "00000000" +        // Prev vout
-        "00" +              // Script length
-        "ffffffff" +        // Sequence
-        "01" +              // Output count
-        "0000000000000000" + // Value
-        "00" +              // Script length
-        "00000000"          // Locktime
     }
 
     /// Validate a spell locally before proving
@@ -274,10 +244,6 @@ impl CharmsService {
         Ok(())
     }
 
-    /// Check if service is in mock mode
-    pub fn is_mock_mode(&self) -> bool {
-        self.mock_mode
-    }
 }
 
 /// Information about a charm on a UTXO

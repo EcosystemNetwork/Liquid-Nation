@@ -317,14 +317,8 @@
   text-decoration: underline;
 }
 
-.tx-mock-id {
-  color: var(--text-subtle);
-  font-family: 'SF Mono', 'Monaco', monospace;
-  cursor: help;
-}
-
 /* Testnet Notice */
-.mock-notice {
+.tx-notice {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -335,22 +329,22 @@
   border-radius: 12px;
 }
 
-.mock-notice span {
+.tx-notice span {
   font-size: 20px;
 }
 
-.mock-notice p {
+.tx-notice p {
   color: var(--text-strong);
   font-size: 13px;
   margin: 0;
   line-height: 1.6;
 }
 
-.mock-notice strong {
+.tx-notice strong {
   color: var(--accent);
 }
 
-.mock-notice code {
+.tx-notice code {
   background: rgba(0, 0, 0, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
@@ -359,7 +353,7 @@
   color: var(--nav-active);
 }
 
-[data-theme="dark"] .mock-notice code {
+[data-theme="dark"] .tx-notice code {
   background: rgba(255, 255, 255, 0.1);
 }
 

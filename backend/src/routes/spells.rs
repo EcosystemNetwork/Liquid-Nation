@@ -71,42 +71,9 @@ pub struct TransactionStatus {
 pub async fn prove_spell(
     Json(req): Json<ProveSpellRequest>,
 ) -> Json<ProveSpellResponse> {
-    // TODO: Call Charms prover API
-    // For mock mode, use local prover
-    
+    // Use local prover by default (run `charms server` to start)
     let charms_api_url = std::env::var("CHARMS_PROVE_API_URL")
-        .unwrap_or_else(|_| "https://v8.charms.dev/spells/prove".to_string());
-    
-    let mock_mode = std::env::var("MOCK_MODE")
-        .map(|v| v == "true")
-        .unwrap_or(true);  // Default to mock for development
-
-    if mock_mode {
-        // Mock response for development
-        return Json(ProveSpellResponse {
-            success: true,
-            transactions: vec![
-                TransactionData {
-                    txid: "mock_commit_txid".to_string(),
-                    hex: "0200000001...".to_string(),
-                    inputs_to_sign: vec![
-                        InputToSign {
-                            index: 0,
-                            sighash_type: "SIGHASH_ALL".to_string(),
-                            script_pubkey: "0014...".to_string(),
-                        },
-                    ],
-                },
-                TransactionData {
-                    txid: "mock_spell_txid".to_string(),
-                    hex: "0200000001...".to_string(),
-                    inputs_to_sign: vec![],  // Spell tx uses commit output
-                },
-            ],
-            total_fee: 500,
-            error: None,
-        });
-    }
+        .unwrap_or_else(|_| "http://localhost:17784/spells/prove".to_string());
 
     // Call Charms prover API
     let client = reqwest::Client::new();
@@ -161,18 +128,6 @@ pub async fn broadcast_transaction(
     Json(req): Json<BroadcastRequest>,
 ) -> Json<BroadcastResponse> {
     // TODO: Broadcast via Bitcoin Core RPC
-    
-    let mock_mode = std::env::var("MOCK_MODE")
-        .map(|v| v == "true")
-        .unwrap_or(true);
-
-    if mock_mode {
-        return Json(BroadcastResponse {
-            success: true,
-            txids: req.signed_txs.iter().map(|_| format!("mock_txid_{}", uuid::Uuid::new_v4())).collect(),
-            error: None,
-        });
-    }
 
     // TODO: Call Bitcoin Core sendrawtransaction
     Json(BroadcastResponse {

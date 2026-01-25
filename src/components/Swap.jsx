@@ -99,7 +99,7 @@ function Swap({ chainThemes }) {
     };
   }, [showSettings]);
 
-  // Simple exchange rate calculation (mock)
+  // Simple exchange rate calculation (placeholder)
   const exchangeRate = 1.05;
 
   // Calculate toAmount based on fromAmount

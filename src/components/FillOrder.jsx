@@ -113,6 +113,8 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
 
         const apiOrder = await api.getOrder(orderId);
         if (apiOrder) {
+          const apiSource = apiOrder.source_chain ? apiOrder.source_chain.toUpperCase() : '';
+          const apiDest = apiOrder.dest_chain ? apiOrder.dest_chain.toUpperCase() : '';
           setOrder({
             orderId: apiOrder.id,
             name: api.shortenAddress(apiOrder.maker_address),
@@ -122,8 +124,8 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
             offerAmount: apiOrder.offer_amount,
             wantToken: apiOrder.want_token,
             wantAmount: apiOrder.want_amount,
-            chain: apiOrder.source_chain,
-            destChain: apiOrder.dest_chain,
+            chain: apiSource || apiOrder.source_chain,
+            destChain: apiDest || apiOrder.dest_chain,
             accepts: [apiOrder.want_token],
             partial: apiOrder.allow_partial,
             status: apiOrder.status,
@@ -227,7 +229,6 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
         setUnsignedTx(response.unsigned_txs[0]);
         setShowSigningModal(true);
       } else if (response && response.txid) {
-        // Already completed (mock mode)
         setFillResult({
           success: true,
           txid: response.txid,
@@ -250,14 +251,7 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
     
     setIsFilling(true);
     try {
-      // Check if this is a mock transaction
-      const isMock = unsignedTx.hex?.includes('mock') || unsignedTx.txid?.includes('mock');
-      
-      if (isMock) {
-        // Simulate signing for mock transactions
-        setSignedTxHex(unsignedTx.hex);
-        await handleBroadcast(unsignedTx.hex);
-      } else if (btcConnected && signPsbt) {
+      if (btcConnected && signPsbt) {
         // Sign with wallet
         const signed = await signPsbt(unsignedTx.hex, {
           finalize: true,
@@ -265,6 +259,10 @@ function FillOrder({ orderId, chainThemes, onNavigate }) {
         });
         setSignedTxHex(signed);
         await handleBroadcast(signed);
+      } else if (unsignedTx.hex) {
+        // Direct broadcast for already-signed transactions
+        setSignedTxHex(unsignedTx.hex);
+        await handleBroadcast(unsignedTx.hex);
       } else {
         setError('Please connect a Bitcoin wallet to sign');
       }

@@ -20,7 +20,7 @@ const mapChainToApi = (chain) => {
   if (normalized === 'btc' || normalized === 'bitcoin') return 'bitcoin';
   if (normalized === 'ada' || normalized === 'cardano') return 'cardano';
   if (normalized === 'eth' || normalized === 'ethereum') return 'ethereum';
-  return 'bitcoin';
+  return normalized.replace(/\s+/g, '_');
 };
 
 // Convert API order to UI format
@@ -41,6 +41,7 @@ const convertApiOrderToUI = (apiOrder) => ({
   partial: apiOrder.allow_partial,
   expiryHeight: apiOrder.expiry_height,
   utxoId: apiOrder.utxo_id,
+  txid: apiOrder.tx_id,
   rawStatus: apiOrder.status,
 });
 

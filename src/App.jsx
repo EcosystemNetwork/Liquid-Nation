@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Offers from './components/Offers';
 import CreateOrder from './components/CreateOrder';
 import FillOrder from './components/FillOrder';
+import OrderDetails from './components/OrderDetails';
 import Settings from './components/Settings';
 import Swap from './components/Swap';
 import { chainThemes } from './data';
@@ -16,6 +17,7 @@ import WalletConnect from './components/WalletConnect';
 function MainApp({ onBackToLanding, initialPage = 'dashboard' }) {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [fillOrderId, setFillOrderId] = useState(null);
+  const [orderDetailsId, setOrderDetailsId] = useState(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { address: btcAddress, connected: btcConnected } = useWallet();
   const { address: evmAddress, connected: evmConnected } = useEVMWallet();
@@ -30,6 +32,9 @@ function MainApp({ onBackToLanding, initialPage = 'dashboard' }) {
   const handleNavigate = (page, orderId = null) => {
     if (page === 'fill' && orderId) {
       setFillOrderId(orderId);
+    }
+    if (page === 'order' && orderId) {
+      setOrderDetailsId(orderId);
     }
     setCurrentPage(page);
   };
@@ -49,6 +54,8 @@ function MainApp({ onBackToLanding, initialPage = 'dashboard' }) {
         return <CreateOrder chainThemes={chainThemes} onNavigate={handleNavigate} />;
       case 'fill':
         return <FillOrder orderId={fillOrderId} chainThemes={chainThemes} onNavigate={handleNavigate} />;
+      case 'order':
+        return <OrderDetails orderId={orderDetailsId} onNavigate={handleNavigate} />;
       case 'swap':
         return <Swap chainThemes={chainThemes} />;
       case 'settings':

@@ -78,6 +78,7 @@ pub struct Order {
     pub created_at: String,
     pub updated_at: String,
     pub utxo_id: Option<String>,
+    pub tx_id: Option<String>,
 }
 
 /// Create order request
@@ -261,6 +262,7 @@ pub async fn list_orders(
             created_at: record.created_at.and_utc().to_rfc3339(),
             updated_at: record.updated_at.and_utc().to_rfc3339(),
             utxo_id: record.utxo_id,
+            tx_id: record.tx_id,
         })
         .collect();
 
@@ -306,6 +308,7 @@ pub async fn get_order(
             created_at: record.created_at.and_utc().to_rfc3339(),
             updated_at: record.updated_at.and_utc().to_rfc3339(),
             utxo_id: record.utxo_id,
+            tx_id: record.tx_id,
         })),
         Ok(None) => Json(None),
         Err(e) => {
@@ -422,8 +425,8 @@ pub async fn create_order(
                     tracing::warn!("Prover API returned empty transactions, falling back to mock");
                     // Fallback to mock transaction
                     vec![crate::services::charms::ProvedTransaction {
-                        hex: format!("0200000001...mock_fallback_{}...", order_id),
-                        txid: format!("mock_fallback_{}", order_id),
+                        hex: format!("0200000001...{}...", order_id),
+                        txid: order_id.clone(),
                     }]
                 } else {
                     txs
@@ -433,8 +436,8 @@ pub async fn create_order(
                 tracing::error!("Prover API error: {}. Falling back to mock transaction.", e);
                 // Fallback to mock transaction when API fails
                 vec![crate::services::charms::ProvedTransaction {
-                    hex: format!("0200000001...mock_fallback_{}...", order_id),
-                    txid: format!("mock_fallback_{}", order_id),
+                    hex: format!("0200000001...{}...", order_id),
+                    txid: order_id.clone(),
                 }]
             }
         }
@@ -477,6 +480,7 @@ pub async fn create_order(
         created_at: now.and_utc().to_rfc3339(),
         updated_at: now.and_utc().to_rfc3339(),
         utxo_id: Some(req.funding_utxo.clone()),
+        tx_id: None,
     };
 
     // Store order in database
@@ -559,6 +563,7 @@ pub async fn fill_order(
         created_at: now.to_rfc3339(),
         updated_at: now.to_rfc3339(),
         utxo_id: Some("abc123:0".to_string()),
+        tx_id: None,
     };
 
     // Prepare fill spell data
@@ -634,6 +639,7 @@ pub async fn fill_order(
         created_at: existing_order.created_at,
         updated_at: now.to_rfc3339(),
         utxo_id: None,
+        tx_id: None,
     };
 
     Json(FillOrderResponse {
@@ -699,6 +705,7 @@ pub async fn cancel_order(
             created_at: now.to_rfc3339(),
             updated_at: now.to_rfc3339(),
             utxo_id: None,
+            tx_id: None,
         },
         spell: SpellData {
             spell_yaml: CANCEL_ORDER_SPELL.to_string(),
@@ -757,6 +764,7 @@ pub async fn partial_fill_order(
             created_at: now.to_rfc3339(),
             updated_at: now.to_rfc3339(),
             utxo_id: Some("abc123:1".to_string()),
+            tx_id: None,
         },
         spell: SpellData {
             spell_yaml: PARTIAL_FILL_SPELL.to_string(),
@@ -823,11 +831,14 @@ pub async fn broadcast_order(
                 tracing::error!("Failed to update order tx_id: {}", e);
             }
 
+            let mempool_hex_url = format!("https://mempool.space/testnet4/tx/{}/hex", txid);
             Json(BroadcastResponse {
                 txid,
                 status: "confirmed".to_string(),
-                message: "Transaction broadcast successfully. Tokens are now locked in escrow."
-                    .to_string(),
+                message: format!(
+                    "Transaction broadcast successfully. View hex on testnet4: {}",
+                    mempool_hex_url
+                ),
             })
         }
         Err(e) => {

@@ -200,7 +200,15 @@ function Dashboard({ chainThemes, onNavigate }) {
                     <StatusProgress percent={offer.status} />
                   </div>
                   <div className="premium-text">{offer.premium}</div>
-                  <div></div>
+                  <div className="order-actions">
+                    <button
+                      type="button"
+                      className="btn-view-order"
+                      onClick={() => onNavigate('order', offer.id || offer.orderId)}
+                    >
+                      My Order
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

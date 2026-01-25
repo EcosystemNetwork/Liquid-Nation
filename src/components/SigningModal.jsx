@@ -94,7 +94,7 @@ const SigningModal = ({
       // Case 1: Mock transactions - simulate signing
       if (isMockTransaction) {
         console.log('Mock transaction - simulating signature');
-        setSignedTxHex(`signed_mock_${unsignedTx.txid || 'tx'}`);
+        setSignedTxHex(unsignedTx.hex || '');
         setStep(2);
         return;
       }

@@ -10,7 +10,6 @@ pub struct HealthResponse {
     pub version: String,
     pub timestamp: String,
     pub prover_api: ProverApiHealth,
-    pub mock_mode: bool,
 }
 
 /// Prover API health status
@@ -24,16 +23,13 @@ pub struct ProverApiHealth {
 
 /// Overall system health check endpoint
 pub async fn health_check() -> Json<HealthResponse> {
-    let mock_mode = std::env::var("MOCK_MODE")
-        .map(|v| v == "true")
-        .unwrap_or(true);
-
+    // Use local prover by default (run `charms server` to start)
     let api_url = std::env::var("CHARMS_PROVE_API_URL")
-        .unwrap_or_else(|_| "https://v8.charms.dev/spells/prove".to_string());
+        .unwrap_or_else(|_| "http://localhost:17784/spells/prove".to_string());
 
     let prover_health = check_prover_api_internal(&api_url).await;
 
-    let status = if prover_health.reachable || mock_mode {
+    let status = if prover_health.reachable {
         "healthy"
     } else {
         "degraded"
@@ -44,14 +40,14 @@ pub async fn health_check() -> Json<HealthResponse> {
         version: env!("CARGO_PKG_VERSION").to_string(),
         timestamp: chrono::Utc::now().to_rfc3339(),
         prover_api: prover_health,
-        mock_mode,
     })
 }
 
 /// Check only the Prover API status
 pub async fn check_prover_api() -> Json<ProverApiHealth> {
+    // Use local prover by default (run `charms server` to start)
     let api_url = std::env::var("CHARMS_PROVE_API_URL")
-        .unwrap_or_else(|_| "https://v8.charms.dev/spells/prove".to_string());
+        .unwrap_or_else(|_| "http://localhost:17784/spells/prove".to_string());
 
     Json(check_prover_api_internal(&api_url).await)
 }

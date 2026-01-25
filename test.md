@@ -34,8 +34,7 @@ curl -s http://localhost:3001/api/health | python3 -m json.tool
     "reachable": true,
     "latency_ms": 961,
     "error": null
-  },
-  "mock_mode": true
+  }
 }
 ```
 
@@ -72,7 +71,6 @@ Check the terminal where the backend is running. You should see:
 ```
 === Environment Validation ===
 ✅ Prover API URL: https://v8.charms.dev/spells/prove
-⚠️  Mock mode: ENABLED (Prover API will not be called)
 ⚠️  SWAP_APP_BINARY_PATH not set (using defaults)
 ⚠️  SWAP_APP_VK not set (using default)
 ✅ Bitcoin RPC: http://127.0.0.1:48332
@@ -83,7 +81,6 @@ Check the terminal where the backend is running. You should see:
 **Success criteria:**
 - ✅ All config variables are displayed
 - ✅ Emoji indicators (✅/⚠️) show status clearly
-- ✅ Mock mode status is shown
 
 ---
 
@@ -98,8 +95,7 @@ cargo test
 
 **Expected output:**
 ```
-running 6 tests
-test services::charms::tests::test_is_mock_mode ... ok
+running 5 tests
 test services::charms::tests::test_api_url ... ok
 test services::charms::tests::test_build_spell ... ok
 test services::charms::tests::test_validate_spell_missing_version ... ok
@@ -115,54 +111,17 @@ test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured
 
 ---
 
-## Test 4: Mock Mode Testing ✅
-
-**Purpose:** Verify mock mode returns transactions without calling Prover API
-
-### Make a Spell Prove Request
-
-```bash
-curl -X POST http://localhost:3001/api/spells/prove \
-  -H "Content-Type: application/json" \
-  -d '{
-    "spell_yaml": "version: 8\nstate: []\nclauses: []",
-    "app_binary": "",
-    "prev_txs": [],
-    "funding_utxo": "test:0",
-    "funding_utxo_value": 10000,
-    "change_address": "tb1qtest",
-    "fee_rate": 10.0
-  }'
-```
-
-**Expected behavior:**
-- Returns mock transactions immediately
-- No actual API call to Prover API
-- Response includes `"success": true` and mock transaction data
-
-**Check logs** - You should see:
-```
-🔧 Mock mode: returning simulated transaction
-```
-
-**Success criteria:**
-- ✅ Response received quickly (<100ms)
-- ✅ Mock transaction returned
-- ✅ No Prover API calls in logs
-
----
-
-## Test 5: Real Prover API with Retry Logic 🚀
+## Test 4: Real Prover API with Retry Logic 🚀
 
 **Purpose:** Test retry mechanism and real API integration
 
 ### Step 1: Stop Backend
 Press `Ctrl+C` in the terminal where backend is running
 
-### Step 2: Restart with Mock Mode Disabled
+### Step 2: Restart backend
 ```bash
 cd backend
-MOCK_MODE=false RUST_LOG=debug cargo run
+RUST_LOG=debug cargo run
 ```
 
 ### Step 3: Make API Request
@@ -256,10 +215,6 @@ curl http://localhost:3001/api/health/prover
 cd backend
 cargo test
 
-# 4. Test with mock mode (backend already running)
-curl -X POST http://localhost:3001/api/spells/prove \
-  -H "Content-Type: application/json" \
-  -d '{"spell_yaml":"version: 8\nstate: []","app_binary":"","prev_txs":[],"funding_utxo":"test:0","funding_utxo_value":10000,"change_address":"tb1qtest","fee_rate":10.0}'
 ```
 
 ---
@@ -271,7 +226,6 @@ curl -X POST http://localhost:3001/api/spells/prove \
 | Health Check | ✅ API reachable, latency shown |
 | Environment Validation | ✅ Config displayed with emoji indicators |
 | Unit Tests | ✅ 6/6 tests pass |
-| Mock Mode | ✅ Returns mock transactions instantly |
 | Real API | ✅ Retry logic with detailed logs |
 | Spell Validation | ✅ Invalid spells rejected |
 

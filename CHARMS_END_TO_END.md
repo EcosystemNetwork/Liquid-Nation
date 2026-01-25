@@ -29,7 +29,7 @@ Key contract logic:
 2) Backend builds a spell from a YAML template with variables injected.
 3) Spell is locally validated and sent for proving (testnet4).
 4) Prover returns unsigned txs; backend returns signing instructions.
-5) Wallet signs and broadcasts (mock or real mode).
+5) Wallet signs and broadcasts.
 
 ---
 
@@ -49,12 +49,12 @@ Key contract logic:
 4) Prover returns a set of unsigned txs.
 5) Backend wraps them into signing instructions (per order flow).
 6) Frontend submits signed txs back to backend.
-7) Backend broadcasts via Bitcoin RPC (`sendrawtransaction`) or mocks it.
+7) Backend broadcasts via Bitcoin RPC (`sendrawtransaction`).
 
 ### Execution touchpoints
 - Prover request payload is created in `backend/src/routes/spells.rs`
 - Prover API call is implemented in `backend/src/services/charms.rs`
-- Broadcast happens in `backend/src/routes/orders.rs` (real mode) or mock
+- Broadcast happens in `backend/src/routes/orders.rs`
 
 ---
 

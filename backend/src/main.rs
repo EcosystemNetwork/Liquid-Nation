@@ -128,20 +128,10 @@ async fn main() -> anyhow::Result<()> {
 async fn validate_environment() {
     tracing::info!("=== Environment Validation ===");
     
-    // Check Prover API URL
+    // Check Prover API URL (local prover by default - run `charms server` to start)
     let api_url = std::env::var("CHARMS_PROVE_API_URL")
-        .unwrap_or_else(|_| "https://v8.charms.dev/spells/prove".to_string());
+        .unwrap_or_else(|_| "http://localhost:17784/spells/prove".to_string());
     tracing::info!("✅ Prover API URL: {}", api_url);
-    
-    // Check mock mode
-    let mock_mode = std::env::var("MOCK_MODE")
-        .map(|v| v == "true")
-        .unwrap_or(true);
-    if mock_mode {
-        tracing::warn!("⚠️  Mock mode: ENABLED (Prover API will not be called)");
-    } else {
-        tracing::info!("✅ Mock mode: DISABLED (Real Prover API calls enabled)");
-    }
     
     // Check binary path
     if let Ok(binary_path) = std::env::var("SWAP_APP_BINARY_PATH") {

@@ -29,7 +29,6 @@ const TransactionHistory = () => {
         amount: order.asset || `${order.offer_amount} ${order.offer_token}`,
         timestamp: order.created_at || new Date().toISOString(),
         chain: order.chain || 'BTC',
-        isMock: order.txid?.startsWith('mock_') || !order.txid,
       }))
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
@@ -44,7 +43,6 @@ const TransactionHistory = () => {
   };
 
   const getTransactionStatus = (order) => {
-    if (order.txid?.startsWith('mock_')) return 'simulated';
     if (order.rawStatus === 'pending_signature') return 'pending';
     if (order.txid) return 'confirmed';
     return 'pending';
@@ -60,7 +58,6 @@ const TransactionHistory = () => {
       case 'confirmed': return '✅';
       case 'pending': return '⏳';
       case 'failed': return '❌';
-      case 'simulated': return '🧪';
       default: return '•';
     }
   };
@@ -92,7 +89,6 @@ const TransactionHistory = () => {
   };
 
   const getExplorerUrl = (txid, chain) => {
-    if (txid?.startsWith('mock_')) return null;
     // Testnet4 explorer
     return `https://mempool.space/testnet4/tx/${txid}`;
   };
@@ -102,7 +98,7 @@ const TransactionHistory = () => {
       <div className="tx-history-header">
         <h2>📜 Transaction History</h2>
         <div className="tx-filters">
-          {['all', 'confirmed', 'pending', 'simulated'].map(f => (
+          {['all', 'confirmed', 'pending'].map(f => (
             <button
               key={f}
               className={`filter-btn ${filter === f ? 'active' : ''}`}
@@ -125,7 +121,7 @@ const TransactionHistory = () => {
           {filteredTxs.map((tx, index) => (
             <div
               key={tx.id || index}
-              className={`tx-item ${tx.status} ${tx.isMock ? 'mock' : ''}`}
+              className={`tx-item ${tx.status}`}
             >
               <div className="tx-top-row">
                 <div className="tx-icon">
@@ -153,7 +149,7 @@ const TransactionHistory = () => {
 
                 {tx.id && (
                   <div className="tx-id">
-                    {getExplorerUrl(tx.id, tx.chain) ? (
+                    {getExplorerUrl(tx.id, tx.chain) && (
                       <a
                         href={getExplorerUrl(tx.id, tx.chain)}
                         target="_blank"
@@ -162,10 +158,6 @@ const TransactionHistory = () => {
                       >
                         {shortenTxid(tx.id)} ↗
                       </a>
-                    ) : (
-                      <span className="tx-mock-id" title="Simulated transaction (mock mode)">
-                        {shortenTxid(tx.id)}
-                      </span>
                     )}
                   </div>
                 )}
@@ -176,7 +168,7 @@ const TransactionHistory = () => {
       )}
 
       {transactions.length > 0 && (
-        <div className="mock-notice">
+        <div className="tx-notice">
           <span>⚡</span>
           <p>
             <strong>Bitcoin Testnet4:</strong> All transactions are on the Bitcoin testnet.

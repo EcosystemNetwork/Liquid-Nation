@@ -205,9 +205,11 @@ pub struct BroadcastResponse {
 // ============ App Configuration ============
 // Built with: charms app build && charms app vk
 
-const DEFAULT_APP_ID: &str = "liquid-swap";
+// App and token IDs must be 64-character hex strings for Charms prover
+// These are SHA256 hashes used as identifiers
+const DEFAULT_APP_ID: &str = "6c697175696473776170617070000000000000000000000000000000000000ab"; // "liquidswapapp" padded
 const DEFAULT_APP_VK: &str = "857ee181813511526321296bb0183b7496e1cdc0801552495464e9ec44c37718";
-const DEFAULT_TOKEN_ID: &str = "toad-token";
+const DEFAULT_TOKEN_ID: &str = "746f6164746f6b656e00000000000000000000000000000000000000000000cd"; // "toadtoken" padded
 const DEFAULT_TOKEN_VK: &str = "857ee181813511526321296bb0183b7496e1cdc0801552495464e9ec44c37718";
 
 // Path to the compiled WASM binary
@@ -329,10 +331,9 @@ pub async fn create_order(
     // Validate funding UTXO
     if req.funding_utxo.is_empty() || req.funding_utxo == "pending" {
         tracing::warn!(
-            "Invalid funding UTXO: {}. Using mock mode.",
+            "Invalid funding UTXO: {}. Provide a valid UTXO.",
             req.funding_utxo
         );
-        // In real mode, we need a valid UTXO. For now, fall back to mock mode
         // TODO: Get actual UTXO from wallet
     }
 
@@ -361,7 +362,8 @@ pub async fn create_order(
         offer_token_id: DEFAULT_TOKEN_ID.to_string(),
         offer_token_vk: DEFAULT_TOKEN_VK.to_string(),
         offer_amount: req.offer_amount.clone(),
-        want_token_id: req.want_token.clone().to_lowercase(),
+        // For demo, use a fixed want token ID (should be from token registry in production)
+        want_token_id: "6274636f696e746f6b656e0000000000000000000000000000000000000000ef".to_string(), // "bitcointoken" padded
         want_amount: req.want_amount.clone(),
         expiry_height,
         allow_partial: req.allow_partial,
@@ -394,62 +396,46 @@ pub async fn create_order(
     }
 
     // Call the Charms Prover API
-    let proved_txs = if !state.charms.is_mock_mode() {
-        // Load app binary if path is set
-        let mut binaries = std::collections::BTreeMap::new();
-        if let Ok(binary_path) = std::env::var("SWAP_APP_BINARY_PATH") {
-            if let Ok(binary_data) = tokio::fs::read(&binary_path).await {
-                let app_vk =
-                    std::env::var("SWAP_APP_VK").unwrap_or_else(|_| DEFAULT_APP_VK.to_string());
-                binaries.insert(app_vk, binary_data);
-                tracing::info!("Loaded app binary from: {}", binary_path);
-            } else {
-                tracing::warn!("Failed to load app binary from: {}", binary_path);
-            }
+    let mut binaries = std::collections::BTreeMap::new();
+    if let Ok(binary_path) = std::env::var("SWAP_APP_BINARY_PATH") {
+        if let Ok(binary_data) = tokio::fs::read(&binary_path).await {
+            let app_vk =
+                std::env::var("SWAP_APP_VK").unwrap_or_else(|_| DEFAULT_APP_VK.to_string());
+            binaries.insert(app_vk, binary_data);
+            tracing::info!("Loaded app binary from: {}", binary_path);
+        } else {
+            tracing::warn!("Failed to load app binary from: {}", binary_path);
         }
+    }
 
-        let prove_request = SpellProveRequest {
-            spell: spell_built.clone(),
-            binaries,
-            prev_txs: vec![],
-            funding_utxo: req.funding_utxo.clone(),
-            funding_utxo_value: req.funding_utxo_value.unwrap_or(10000),
-            change_address: req.maker_address.clone(),
-            fee_rate: 10.0,
-            chain: "testnet4".to_string(),
-        };
+    // Prover expects "bitcoin" or "cardano"; map testnet4 to bitcoin for proving
+    let prover_chain = match source_chain.as_str() {
+        "cardano" => "cardano".to_string(),
+        "testnet4" => "bitcoin".to_string(),
+        _ => "bitcoin".to_string(),
+    };
 
-        match state.charms.prove_spell(prove_request).await {
-            Ok(txs) => {
-                if txs.is_empty() {
-                    tracing::warn!("Prover API returned empty transactions, falling back to mock");
-                    // Fallback to mock transaction
-                    vec![crate::services::charms::ProvedTransaction {
-                        hex: format!("0200000001...{}...", order_id),
-                        txid: order_id.clone(),
-                    }]
-                } else {
-                    txs
-                }
-            }
-            Err(e) => {
-                tracing::error!("Prover API error: {}. Falling back to mock transaction.", e);
-                // Fallback to mock transaction when API fails
-                vec![crate::services::charms::ProvedTransaction {
-                    hex: format!("0200000001...{}...", order_id),
-                    txid: order_id.clone(),
-                }]
-            }
+    let prove_request = SpellProveRequest {
+        spell: spell_built.clone(),
+        binaries,
+        prev_txs: vec![],
+        funding_utxo: req.funding_utxo.clone(),
+        funding_utxo_value: req.funding_utxo_value.unwrap_or(10000),
+        change_address: req.maker_address.clone(),
+        fee_rate: 10.0,
+        chain: prover_chain,
+    };
+
+    let (proved_txs, prover_error) = match state.charms.prove_spell(prove_request).await {
+        Ok(txs) => (txs, None),
+        Err(e) => {
+            tracing::error!("Prover API error: {}", e);
+            (vec![], Some(e.to_string()))
         }
-    } else {
-        // Mock mode - generate mock transaction
-        vec![crate::services::charms::ProvedTransaction {
-            hex: "0200000001...mock...".to_string(),
-            txid: format!("mock_{}", order_id),
-        }]
     };
 
     // Create unsigned transactions for signing
+    // Only create valid transactions from prover - no placeholders
     let unsigned_txs: Vec<UnsignedTransaction> = proved_txs
         .iter()
         .map(|tx| UnsignedTransaction {
@@ -462,6 +448,17 @@ pub async fn create_order(
             }],
         })
         .collect();
+
+    // Log prover status
+    if unsigned_txs.is_empty() {
+        if let Some(ref err) = prover_error {
+            tracing::warn!("Order {} created without transactions - prover error: {}", order_id, err);
+        } else {
+            tracing::warn!("Order {} created without transactions - prover returned empty", order_id);
+        }
+    } else {
+        tracing::info!("Order {} has {} transactions ready for signing", order_id, unsigned_txs.len());
+    }
 
     // Create the order record
     let order = Order {
@@ -612,16 +609,11 @@ pub async fn fill_order(
             FILL_ORDER_SPELL.to_string()
         });
 
-    // Call prover (mock for now)
-    let unsigned_txs = vec![UnsignedTransaction {
-        hex: "0200000001...mock_fill...".to_string(),
-        txid: format!("mock_fill_{}", id),
-        inputs_to_sign: vec![InputToSign {
-            index: 0,
-            address: req.taker_address.clone(),
-            sighash_type: "SIGHASH_DEFAULT".to_string(),
-        }],
-    }];
+    // Call prover to generate fill transaction
+    // For now, return empty - the UI will show an error if no transactions
+    // TODO: Implement actual prover call for fill orders
+    let unsigned_txs: Vec<UnsignedTransaction> = vec![];
+    tracing::warn!("Fill order {} - prover integration pending, no transactions generated", id);
 
     let order = Order {
         id: id.clone(),
@@ -678,15 +670,9 @@ pub async fn cancel_order(
     // Build cancel spell
     let spell_built = CANCEL_ORDER_SPELL.to_string();
 
-    let unsigned_txs = vec![UnsignedTransaction {
-        hex: "0200000001...mock_cancel...".to_string(),
-        txid: format!("mock_cancel_{}", id),
-        inputs_to_sign: vec![InputToSign {
-            index: 0,
-            address: "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx".to_string(),
-            sighash_type: "SIGHASH_DEFAULT".to_string(),
-        }],
-    }];
+    // TODO: Implement actual prover call for cancel orders
+    let unsigned_txs: Vec<UnsignedTransaction> = vec![];
+    tracing::warn!("Cancel order {} - prover integration pending, no transactions generated", id);
 
     Json(FillOrderResponse {
         order: Order {
@@ -737,15 +723,9 @@ pub async fn partial_fill_order(
     // Build partial fill spell
     let spell_built = PARTIAL_FILL_SPELL.to_string();
 
-    let unsigned_txs = vec![UnsignedTransaction {
-        hex: "0200000001...mock_partial...".to_string(),
-        txid: format!("mock_partial_{}", id),
-        inputs_to_sign: vec![InputToSign {
-            index: 0,
-            address: req.taker_address.clone(),
-            sighash_type: "SIGHASH_DEFAULT".to_string(),
-        }],
-    }];
+    // TODO: Implement actual prover call for partial fill orders
+    let unsigned_txs: Vec<UnsignedTransaction> = vec![];
+    tracing::warn!("Partial fill order {} - prover integration pending, no transactions generated", id);
 
     Json(FillOrderResponse {
         order: Order {
@@ -793,28 +773,19 @@ pub async fn broadcast_order(
 ) -> Json<BroadcastResponse> {
     tracing::info!("Broadcasting transaction for order {}", id);
 
-    // Check if we're in mock mode (transaction hex starts with mock indicator)
-    let is_mock = req.signed_tx_hex.contains("mock")
-        || req.signed_tx_hex.len() < 100
-        || state.charms.is_mock_mode();
-
-    if is_mock {
-        // In mock mode, simulate successful broadcast
-        let mock_txid = format!("mock_broadcast_{}", uuid::Uuid::new_v4());
-        tracing::info!("Mock mode: simulating broadcast with txid {}", mock_txid);
-
-        // Update order status in database
-        if let Err(e) = db::update_order_status(&state.db, &id, "open").await {
-            tracing::error!("Failed to update order status: {}", e);
-        }
-        if let Err(e) = db::update_order_tx_id(&state.db, &id, &mock_txid).await {
-            tracing::error!("Failed to update order tx_id: {}", e);
-        }
-
+    if req.signed_tx_hex.starts_with("cHNidP") || req.signed_tx_hex.starts_with("70736274") {
         return Json(BroadcastResponse {
-            txid: mock_txid,
-            status: "confirmed".to_string(),
-            message: "Transaction simulated successfully (mock mode). In production, tokens would be locked in escrow.".to_string(),
+            txid: "".to_string(),
+            status: "failed".to_string(),
+            message: "PSBT detected. Please provide a finalized raw transaction hex.".to_string(),
+        });
+    }
+
+    if !req.signed_tx_hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Json(BroadcastResponse {
+            txid: "".to_string(),
+            status: "failed".to_string(),
+            message: "Invalid transaction hex. Expected raw hex-encoded transaction.".to_string(),
         });
     }
 

@@ -1,4 +1,4 @@
-// Central export for all mock data
+// Central export for all sample data
 export { offers } from './offers';
 export { chainThemes } from './chainThemes';
 export { protocolStats, heroStats } from './stats';

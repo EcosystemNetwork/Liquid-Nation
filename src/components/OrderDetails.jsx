@@ -128,7 +128,20 @@ function OrderDetails({ orderId, onNavigate }) {
             </div>
             <div>
               <span>Transaction ID</span>
-              <strong>{txid}</strong>
+              <strong>
+                {txid && txid !== '—' ? (
+                  <a
+                    href={`https://mempool.space/testnet4/tx/${txid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="order-details-link"
+                  >
+                    {txid.length > 16 ? `${txid.slice(0, 8)}...${txid.slice(-8)}` : txid}
+                  </a>
+                ) : (
+                  txid
+                )}
+              </strong>
             </div>
           </div>
         )}

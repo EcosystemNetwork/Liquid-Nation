@@ -30,7 +30,6 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://liquidnation:liquidnation123@postgres:5432/liquid_nation
-      MOCK_MODE: "false"
       CHARMS_PROVE_API_URL: https://v8.charms.dev/spells/prove
       BITCOIN_RPC_URL: http://host.docker.internal:48332
       PORT: 3001

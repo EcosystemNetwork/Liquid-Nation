@@ -81,3 +81,14 @@
     font-weight: 600;
     word-break: break-all;
 }
+
+.order-details-link {
+    color: #4da3ff;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.order-details-link:hover {
+    color: #7fc1ff;
+    text-decoration: underline;
+}

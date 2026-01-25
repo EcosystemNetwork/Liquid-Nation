@@ -6,7 +6,8 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3001/api';
-const PROVER_API_URL = import.meta.env.VITE_PROVER_API_URL || 'https://v8.charms.dev/spells/prove';
+// Use local prover by default (run `charms server` to start)
+const PROVER_API_URL = import.meta.env.VITE_PROVER_API_URL || 'http://localhost:17784/spells/prove';
 const USE_PROVER_DIRECT = import.meta.env.VITE_USE_PROVER_DIRECT === 'true';
 
 /**

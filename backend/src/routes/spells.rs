@@ -123,7 +123,7 @@ pub async fn prove_spell(
             "funding_utxo_value": req.funding_utxo_value,
             "change_address": req.change_address,
             "fee_rate": req.fee_rate,
-            "chain": "Bitcoin"
+            "chain": "testnet4"
         }))
         .send()
         .await
